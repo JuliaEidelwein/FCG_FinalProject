@@ -110,13 +110,24 @@ bool g_LeftMouseButtonPressed = false;
 bool g_RightMouseButtonPressed = false; // Análogo para botão direito do mouse
 bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mouse
 
-// Variáveis que definem a câmera em coordenadas esféricas, controladas pelo
-// usuário através do mouse (veja função CursorPosCallback()). A posição
-// efetiva da câmera é calculada dentro da função main(), dentro do loop de
-// renderização.
+/** VARIAVEIS DA CAMERA */
+
 float camera_pitch = 0.0f;
 float camera_yaw = PI / 2;
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
+
+glm::vec4 camera_position_c  = glm::vec4(0.0f, 2.0f, -8.0f, 1.0f); // Ponto "c", centro da câmera
+glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
+
+glm::vec4 camera_view_vector = glm::vec4(cos(camera_yaw) * cos(camera_pitch) , sin(camera_pitch), sin(camera_yaw) * cos(camera_pitch), 0.0f);
+glm::vec4 w = -camera_view_vector;
+glm::vec4 u = crossproduct(camera_up_vector, w);
+
+bool free_cam_enabled = true;
+
+
+
+
 
 int jumpStep = 0;
 int movement = 0;
@@ -125,13 +136,6 @@ char legUp = 'n';
 char prevLegUp = 'n';
 
 bool started = false;
-
-glm::vec4 camera_position_c  = glm::vec4(0.0f, 2.0f, -8.0f, 1.0f); // Ponto "c", centro da câmera
-glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
-
-glm::vec4 camera_view_vector = glm::vec4(cos(camera_yaw) * cos(camera_pitch) , sin(camera_pitch), sin(camera_yaw) * cos(camera_pitch), 0.0f);
-glm::vec4 w = -camera_view_vector;
-glm::vec4 u = crossproduct(camera_up_vector, w);
 
 // Variáveis que controlam rotação do antebraço direito
 float g_RightForearmAngleZ = 0.0f;
@@ -705,44 +709,39 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
 }
 
 void BuildCamera(GLint view_uniform, GLint projection_uniform) {
-        glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+    glm::mat4 view;
 
-        // Agora computamos a matriz de Projeção.
-        glm::mat4 projection;
+    if(free_cam_enabled) {
+        view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+    } else {
+        glm::vec4 new_cam_pos = camera_position_c + (camera_view_vector * g_CameraDistance) / norm(camera_view_vector);
+        view = Matrix_Camera_View(new_cam_pos, -camera_view_vector, camera_up_vector);
+    }
 
-        // Note que, no sistema de coordenadas da câmera, os planos near e far
-        // estão no sentido negativo! Veja slides 191-194 do documento
-        // "Aula_09_Projecoes.pdf".
-        float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -10.0f; // Posição do "far plane"
+    glm::mat4 projection;
 
-        if (g_UsePerspectiveProjection)
-        {
-            // Projeção Perspectiva.
-            // Para definição do field of view (FOV), veja slide 228 do
-            // documento "Aula_09_Projecoes.pdf".
-            float field_of_view = 3.141592 / 3.0f;
-            projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
-        }
-        else
-        {
-            // Projeção Ortográfica.
-            // Para definição dos valores l, r, b, t ("left", "right", "bottom", "top"),
-            // PARA PROJEÇÃO ORTOGRÁFICA veja slide 237 do documento "Aula_09_Projecoes.pdf".
-            // Para simular um "zoom" ortográfico, computamos o valor de "t"
-            // utilizando a variável g_CameraDistance.
-            float t = 1.5f*g_CameraDistance/2.5f;
-            float b = -t;
-            float r = t*g_ScreenRatio;
-            float l = -r;
-            projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
-        }
+    float nearplane = -0.1f;  // Posição do "near plane"
+    float farplane  = -10.0f; // Posição do "far plane"
 
-        // Enviamos as matrizes "view" e "projection" para a placa de vídeo
-        // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
-        // efetivamente aplicadas em todos os pontos.
-        glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
-        glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
+    if (g_UsePerspectiveProjection)
+    {
+        float field_of_view = 3.141592 / 3.0f;
+        projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
+    }
+    else
+    {
+        float t = 1.5f*g_CameraDistance/2.5f;
+        float b = -t;
+        float r = t*g_ScreenRatio;
+        float l = -r;
+        projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
+    }
+
+    // Enviamos as matrizes "view" e "projection" para a placa de vídeo
+    // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
+    // efetivamente aplicadas em todos os pontos.
+    glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
+    glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 }
 
 
@@ -1487,6 +1486,10 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     float dx = xpos - g_LastCursorPosX;
     float dy = ypos - g_LastCursorPosY;
 
+    if(!free_cam_enabled) {
+        dy = - dy;
+    }
+
     // Atualizamos parâmetros da câmera com os deslocamentos
     camera_yaw   += 0.01f * dx;
     camera_pitch -= 0.01f * dy;
@@ -1553,18 +1556,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 
     float delta = 3.141592 / 16; // 22.5 graus, em radianos.
 
-    if (key == GLFW_KEY_X && action == GLFW_PRESS)
+    if (key == GLFW_KEY_C && action == GLFW_PRESS)
     {
-        g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-    {
-        g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-    if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-    {
-        g_AngleZ += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
+        free_cam_enabled = !free_cam_enabled;
     }
 
     // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.
