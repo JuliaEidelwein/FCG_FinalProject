@@ -23,6 +23,8 @@
 #include "utils.h"
 #include "matrices.h"
 
+#define PI 3.141592f
+
 // Declaração de funções utilizadas para pilha de matrizes de modelagem.
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
@@ -112,14 +114,9 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 // usuário através do mouse (veja função CursorPosCallback()). A posição
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
-float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
+float camera_pitch = 0.0f;
+float camera_yaw = PI / 2;
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
-
-float r = g_CameraDistance;
-float y = -r*sin(g_CameraPhi);
-float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
-float x = -r*cos(g_CameraPhi)*sin(g_CameraTheta);
 
 int jumpStep = 0;
 int movement = 0;
@@ -132,7 +129,7 @@ bool started = false;
 glm::vec4 camera_position_c  = glm::vec4(0.0f, 2.0f, -8.0f, 1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
 
-glm::vec4 camera_view_vector = glm::vec4(x,y,z,0.0f); // Vetor "view", sentido para onde a câmera está virada
+glm::vec4 camera_view_vector = glm::vec4(cos(camera_yaw) * cos(camera_pitch) , sin(camera_pitch), sin(camera_yaw) * cos(camera_pitch), 0.0f);
 glm::vec4 w = -camera_view_vector;
 glm::vec4 u = crossproduct(camera_up_vector, w);
 
@@ -172,7 +169,7 @@ float g_LeftLowerLegAngleZ = 0.0f;
 float g_RightLowerLegAngleX = 0.0f;
 float g_RightLowerLegAngleZ = 0.0f;
 
-void BuildCamera();
+void BuildCamera(GLint view_uniform, GLint projection_uniform);
 
 void liftLeftLeg();
 void liftRightLeg();
@@ -350,70 +347,7 @@ int main()
         // comentários detalhados dentro da definição de BuildTriangles().
         glBindVertexArray(vertex_array_object_id);
 
-        // Computamos a posição da câmera utilizando coordenadas esféricas.  As
-        // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
-        // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
-        // e ScrollCallback().
-        r = g_CameraDistance;
-        y = r*sin(g_CameraPhi);
-        z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
-        x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
-
-        // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
-        // Veja slides 165-175 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
-        float xCamera = 0.0f, yCamera = 3.5f;
-        glm::vec4 camera_position_c  = glm::vec4(xCamera,yCamera,-9.5f,1.0f); // Ponto "c", centro da câmera
-        //glm::vec4 camera_position_c = glm::vec4(x,y,z,1.0f);
-        glm::vec4 camera_lookat_l    = glm::vec4(0.0f,1.3f,-5.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
-        glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
-        glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
-
-        //camera_view_vector = glm::vec4(x,y,z,0.0f); // Vetor "view", sentido para onde a câmera está virada
-        //w = -camera_view_vector;
-        //u = crossproduct(camera_up_vector, w);
-
-        // Computamos a matriz "View" utilizando os parâmetros da câmera para
-        // definir o sistema de coordenadas da câmera.  Veja slide 179 do
-        // documento "Aula_08_Sistemas_de_Coordenadas.pdf".
-        glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
-
-        // Agora computamos a matriz de Projeção.
-        glm::mat4 projection;
-
-        // Note que, no sistema de coordenadas da câmera, os planos near e far
-        // estão no sentido negativo! Veja slides 191-194 do documento
-        // "Aula_09_Projecoes.pdf".
-        float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -55.0f; // Posição do "far plane"
-
-        if (g_UsePerspectiveProjection)
-        {
-            // Projeção Perspectiva.
-            // Para definição do field of view (FOV), veja slide 228 do
-            // documento "Aula_09_Projecoes.pdf".
-            float field_of_view = 3.141592 / 3.0f;
-            projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
-        }
-        else
-        {
-            // Projeção Ortográfica.
-            // Para definição dos valores l, r, b, t ("left", "right", "bottom", "top"),
-            // veja slide 243 do documento "Aula_09_Projecoes.pdf".
-            // Para simular um "zoom" ortográfico, computamos o valor de "t"
-            // utilizando a variável g_CameraDistance.
-            float t = 1.5f*g_CameraDistance/2.5f;
-            float b = -t;
-            float r = t*g_ScreenRatio;
-            float l = -r;
-            projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
-
-        }
-
-        // Enviamos as matrizes "view" e "projection" para a placa de vídeo
-        // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
-        // efetivamente aplicadas em todos os pontos.
-        glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
-        glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
+        BuildCamera(view_uniform, projection_uniform);
 
         // ##### TAREFAS DO LABORATÓRIO 3
         BuildCharacter(currentTime, model_uniform, render_as_black_uniform, program_id);
@@ -770,8 +704,45 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
     PopMatrix(model);
 }
 
-void BuildCamera() {
+void BuildCamera(GLint view_uniform, GLint projection_uniform) {
+        glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
 
+        // Agora computamos a matriz de Projeção.
+        glm::mat4 projection;
+
+        // Note que, no sistema de coordenadas da câmera, os planos near e far
+        // estão no sentido negativo! Veja slides 191-194 do documento
+        // "Aula_09_Projecoes.pdf".
+        float nearplane = -0.1f;  // Posição do "near plane"
+        float farplane  = -10.0f; // Posição do "far plane"
+
+        if (g_UsePerspectiveProjection)
+        {
+            // Projeção Perspectiva.
+            // Para definição do field of view (FOV), veja slide 228 do
+            // documento "Aula_09_Projecoes.pdf".
+            float field_of_view = 3.141592 / 3.0f;
+            projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
+        }
+        else
+        {
+            // Projeção Ortográfica.
+            // Para definição dos valores l, r, b, t ("left", "right", "bottom", "top"),
+            // PARA PROJEÇÃO ORTOGRÁFICA veja slide 237 do documento "Aula_09_Projecoes.pdf".
+            // Para simular um "zoom" ortográfico, computamos o valor de "t"
+            // utilizando a variável g_CameraDistance.
+            float t = 1.5f*g_CameraDistance/2.5f;
+            float b = -t;
+            float r = t*g_ScreenRatio;
+            float l = -r;
+            projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
+        }
+
+        // Enviamos as matrizes "view" e "projection" para a placa de vídeo
+        // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
+        // efetivamente aplicadas em todos os pontos.
+        glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
+        glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 }
 
 
@@ -1509,63 +1480,42 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
-    if (g_LeftMouseButtonPressed)
-    {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
+    if (!g_LeftMouseButtonPressed)
+        return;
 
-        // Atualizamos parâmetros da câmera com os deslocamentos
-        g_CameraTheta -= 0.01f*dx;
-        g_CameraPhi   += 0.01f*dy;
+    // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+    float dx = xpos - g_LastCursorPosX;
+    float dy = ypos - g_LastCursorPosY;
 
-        // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = 3.141592f/2;
-        float phimin = -phimax;
+    // Atualizamos parâmetros da câmera com os deslocamentos
+    camera_yaw   += 0.01f * dx;
+    camera_pitch -= 0.01f * dy;
 
-        if (g_CameraPhi > phimax)
-            g_CameraPhi = phimax;
+    // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
+    float maxPitch = 3.141592f / 2;
+    float minPitch = -maxPitch;
+    float maxYaw = 3.141592f * 2;
 
-        if (g_CameraPhi < phimin)
-            g_CameraPhi = phimin;
+    if (camera_pitch > maxPitch)
+        camera_pitch = maxPitch;
 
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
+    if (camera_pitch < minPitch)
+        camera_pitch = minPitch;
 
-    if (g_RightMouseButtonPressed)
-    {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
+    if (camera_yaw >= maxYaw)
+        camera_yaw -= maxYaw;
 
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        //g_ForearmAngleZ -= 0.01f*dx;
-        //g_ForearmAngleX += 0.01f*dy;
+    if (camera_yaw < 0)
+        camera_yaw += maxYaw;
 
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
-
-    if (g_MiddleMouseButtonPressed)
-    {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_TorsoPositionX += 0.01f*dx;
-        g_TorsoPositionY -= 0.01f*dy;
-
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
+    // Atualizamos as variáveis globais para armazenar a posição atual do
+    // cursor como sendo a última posição conhecida do cursor.
+    camera_view_vector = glm::vec4(cos(camera_yaw) * cos(camera_pitch),
+                                    sin(camera_pitch),
+                                    sin(camera_yaw) * cos(camera_pitch),
+                                    0.0f);
+    g_LastCursorPosX = xpos;
+    g_LastCursorPosY = ypos;
 }
 
 // Função callback chamada sempre que o usuário movimenta a "rodinha" do mouse.
