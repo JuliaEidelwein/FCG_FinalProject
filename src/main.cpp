@@ -1789,6 +1789,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         //g_TorsoPositionY = g_TorsoPositionY + 0.3f;
 
     }
+    if (key == GLFW_KEY_C && action == GLFW_PRESS)
+    {
+         free_cam_enabled = !free_cam_enabled;
+    }
 
     if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
     {
