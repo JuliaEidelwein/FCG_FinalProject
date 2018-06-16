@@ -34,3 +34,6 @@
 # Folders
 obj
 bin
+
+# IDE Files
+*.depend
