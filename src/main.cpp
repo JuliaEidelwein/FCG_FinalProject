@@ -124,8 +124,12 @@ float x = -r*cos(g_CameraPhi)*sin(g_CameraTheta);
 int jumpStep = 0;
 int movement = 0;
 double timeWhenSpacePressed = 0;
+double timeWhenLeftPressed = 0;
+double timeWhenRightPressed = 0;
 char legUp = 'n';
 char prevLegUp = 'n';
+
+int track = 1;
 
 bool started = false;
 
@@ -179,6 +183,7 @@ void liftRightLeg();
 void fall();
 void jump();
 void clearAngles();
+void smoothTransition();
 void lowLeftLeg();
 void lowRightLeg();
 void moveLeftArmBackwards(int dir);
@@ -537,7 +542,7 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
 
     // Translação inicial do torso
     //model = model * Matrix_Translate(g_TorsoPositionX - 1.0f, g_TorsoPositionY + 1.0f, 0.0f);
-    model = model * Matrix_Translate(0.0f, g_TorsoPositionY + 1.83, -6.5f);
+    model = model * Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY + 1.83, -6.5f);
     //if(jumpStep > 0){
     switch(movement){
     case -1: //Falling
@@ -545,9 +550,10 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
             fall();
         } else {
             timeWhenSpacePressed = 0;
+            clearAngles();
             if(started){
                 movement = 2;
-                clearAngles();
+                //clearAngles();
                 legUp = 'n';
             }
         }
@@ -556,6 +562,23 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
         if(currentTime - timeWhenSpacePressed < 0.4){
             jump();
         } else {
+            /*printf("bracoE: %f\n",g_LeftArmAngleX);
+            printf("bracoD: %f\n",g_RightArmAngleX);
+            printf("AntebracoE: %f\n",g_LeftForearmAngleX);
+            printf("AntebracoD: %f\n",g_RightForearmAngleX);
+            printf("pernaE: %f\n",g_LeftLegAngleX);
+            printf("pernaD: %f\n",g_RightLegAngleX);
+            printf("canelaE: %f\n",g_LeftLowerLegAngleX);
+            printf("canelaD: %f\n",g_RightLowerLegAngleX);
+            printf("\nAngulo Z\n");
+            printf("bracoE: %f\n",g_LeftArmAngleZ);
+            printf("bracoD: %f\n",g_RightArmAngleZ);
+            printf("AntebracoE: %f\n",g_LeftForearmAngleZ);
+            printf("AntebracoD: %f\n",g_RightForearmAngleZ);
+            printf("pernaE: %f\n",g_LeftLegAngleZ);
+            printf("pernaD: %f\n",g_RightLegAngleZ);
+            printf("canelaE: %f\n",g_LeftLowerLegAngleZ);
+            printf("canelaD: %f\n",g_RightLowerLegAngleZ);*/
             movement = 0;
         }
         break;
@@ -601,11 +624,32 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
             break;
         }
         break;
+    /*case 3: //Move Right
+        if(currentTime - timeWhenRightPressed < 0.47){
+            g_TorsoPositionX = g_TorsoPositionX - 2.5*timeDelta;
+        } else {
+            movement = 2;
+        }
+        break;
+    case 4: //Move Left
+        if(currentTime - timeWhenLeftPressed < 0.47){
+            g_TorsoPositionX = g_TorsoPositionX + 2.5*timeDelta;
+        } else {
+            movement = 2;
+        }
+        break;*/
     case 0://Nothing
     default:
         if(currentTime - timeWhenSpacePressed > 0.47){
             movement = -1;
         }
+    }
+    if(currentTime - timeWhenRightPressed < 0.3){
+        g_TorsoPositionX = g_TorsoPositionX - 4*timeDelta;
+
+    }
+    if(currentTime - timeWhenLeftPressed < 0.3){
+        g_TorsoPositionX = g_TorsoPositionX + 4*timeDelta;
     }
 
     //}
@@ -693,10 +737,6 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
         model = model * Matrix_Translate(-0.315f, 0.05f, 0.0f);
         model = model * Matrix_Rotate_Y(3.141592) * Matrix_Rotate_X(3.141592);
         PushMatrix(model);
-            model = model
-                  * Matrix_Rotate_Z(g_AngleZ)  // TERCEIRO rotação Z de Euler
-                  * Matrix_Rotate_Y(g_AngleY)  // SEGUNDO rotação Y de Euler
-                  * Matrix_Rotate_X(g_AngleX); // PRIMEIRO rotação X de Euler
             PushMatrix(model);
                 model = model * Matrix_Scale(0.25f, 0.25f, 0.25f);
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
@@ -811,27 +851,123 @@ void fall(){
     g_LeftLegAngleZ = g_LeftLegAngleZ - 1.2*timeDelta;
 }
 
+bool spacePressed;
+float LeftArmAngleXDelta;
+float RightArmAngleXDelta;
+float LeftForearmAngleXDelta;
+float RightForearmAngleXDelta;
+float LeftLegAngleXDelta;
+float RightLegAngleXDelta;
+float LeftLowerLegAngleXDelta;
+float RightLowerLegAngleXDelta;
+
+float LeftArmAngleZDelta;
+float RightArmAngleZDelta;
+float LeftForearmAngleZDelta;
+float RightForearmAngleZDelta;
+float LeftLegAngleZDelta;
+float RightLegAngleZDelta;
+float LeftLowerLegAngleZDelta;
+float RightLowerLegAngleZDelta;
+
 void jump(){
+    if(spacePressed){
+        spacePressed = false;
+        float desiredLeftArmAngleX = -0.806240;
+        float desiredRightArmAngleX = -1.209359;
+        float desiredLeftForearmAngleX = -2.015599;
+        float desiredRightForearmAngleX = -1.209359;
+        float desiredLeftLegAngleX = -0.403120;
+        float desiredRightLegAngleX = -0.886863;
+        float desiredLeftLowerLegAngleX = 1.814039;
+        float desiredRightLowerLegAngleX = 1.370607;
+
+        float desiredLeftArmAngleZ = 0.806240;
+        float desiredRightArmAngleZ = -0.806240;
+        float desiredLeftForearmAngleZ = 0.685304;
+        float desiredRightForearmAngleZ = -0.685304;
+        float desiredLeftLegAngleZ = 0.483744;
+        float desiredRightLegAngleZ = -0.403120;
+        float desiredLeftLowerLegAngleZ = 0.000000;
+        float desiredRightLowerLegAngleZ = 0.403120;
+
+        float totalIterationTime = 0.4;//timeDelta;
+
+        LeftArmAngleXDelta = (desiredLeftArmAngleX - g_LeftArmAngleX);
+        RightArmAngleXDelta = (desiredRightArmAngleX - g_RightArmAngleX);
+        LeftForearmAngleXDelta = (desiredLeftForearmAngleX - g_LeftForearmAngleX);
+        RightForearmAngleXDelta = (desiredRightForearmAngleX - g_RightForearmAngleX);
+        LeftLegAngleXDelta = (desiredLeftLegAngleX - g_LeftLegAngleX);
+        RightLegAngleXDelta = (desiredRightLegAngleX - g_RightLegAngleX);
+        LeftLowerLegAngleXDelta = (desiredLeftLowerLegAngleX - g_LeftLowerLegAngleX);
+        RightLowerLegAngleXDelta = (desiredRightLowerLegAngleX - g_RightLowerLegAngleX);
+
+        LeftArmAngleZDelta = (desiredLeftArmAngleZ - g_LeftArmAngleZ);
+        RightArmAngleZDelta = (desiredRightArmAngleZ - g_RightArmAngleZ);
+        LeftForearmAngleZDelta = (desiredLeftForearmAngleZ - g_LeftForearmAngleZ);
+        RightForearmAngleZDelta = (desiredRightForearmAngleZ - g_RightForearmAngleZ);
+        LeftLegAngleZDelta = (desiredLeftLegAngleZ - g_LeftLegAngleZ);
+        RightLegAngleZDelta = (desiredRightLegAngleZ - g_RightLegAngleZ);
+        LeftLowerLegAngleZDelta = (desiredLeftLowerLegAngleZ - g_LeftLowerLegAngleZ);
+        RightLowerLegAngleZDelta = (desiredRightLowerLegAngleZ - g_RightLowerLegAngleZ);
+
+        LeftArmAngleXDelta = LeftArmAngleXDelta/totalIterationTime;
+        RightArmAngleXDelta = RightArmAngleXDelta/totalIterationTime;
+        LeftForearmAngleXDelta = LeftForearmAngleXDelta/totalIterationTime;
+        RightForearmAngleXDelta = RightForearmAngleXDelta/totalIterationTime;
+        LeftLegAngleXDelta = LeftLegAngleXDelta/totalIterationTime;
+        RightLegAngleXDelta = RightLegAngleXDelta/totalIterationTime;
+        LeftLowerLegAngleXDelta = LeftLowerLegAngleXDelta/totalIterationTime;
+        RightLowerLegAngleXDelta = RightLowerLegAngleXDelta/totalIterationTime;
+
+        LeftArmAngleZDelta = LeftArmAngleZDelta/totalIterationTime;
+        RightArmAngleZDelta = RightArmAngleZDelta/totalIterationTime;
+        LeftForearmAngleZDelta = LeftForearmAngleZDelta/totalIterationTime;
+        RightForearmAngleZDelta = RightForearmAngleZDelta/totalIterationTime;
+        LeftLegAngleZDelta = LeftLegAngleZDelta/totalIterationTime;
+        RightLegAngleZDelta = RightLegAngleZDelta/totalIterationTime;
+        LeftLowerLegAngleZDelta = LeftLowerLegAngleZDelta/totalIterationTime;
+        RightLowerLegAngleZDelta = RightLowerLegAngleZDelta/totalIterationTime;
+
+        /*printf("%f\n",LeftArmAngleXDelta);
+        printf("%f\n",RightArmAngleXDelta);
+        printf("%f\n",LeftForearmAngleXDelta);
+        printf("%f\n",RightForearmAngleXDelta);
+        printf("%f\n",LeftLegAngleXDelta);
+        printf("%f\n",RightLegAngleXDelta);
+        printf("%f\n",LeftLowerLegAngleXDelta);
+        printf("%f\n",RightLowerLegAngleXDelta);
+
+        printf("%f\n",LeftArmAngleZDelta);
+        printf("%f\n",RightArmAngleZDelta);
+        printf("%f\n",LeftForearmAngleZDelta);
+        printf("%f\n",RightForearmAngleZDelta);
+        printf("%f\n",LeftLegAngleZDelta);
+        printf("%f\n",RightLegAngleZDelta);
+        printf("%f\n",LeftLowerLegAngleZDelta);
+        printf("%f\n",RightLowerLegAngleZDelta);*/
+    }
+
     g_TorsoPositionY = g_TorsoPositionY + 2*timeDelta;
 
-    g_LeftForearmAngleZ = g_LeftForearmAngleZ + 1.7*timeDelta;
-    g_LeftForearmAngleX = g_LeftForearmAngleX - 5*timeDelta;
-    g_RightForearmAngleZ = g_RightForearmAngleZ - 1.7*timeDelta;
-    g_RightForearmAngleX = g_RightForearmAngleX - 3*timeDelta;
+    g_LeftForearmAngleZ = g_LeftForearmAngleZ + LeftForearmAngleZDelta*timeDelta;
+    g_LeftForearmAngleX = g_LeftForearmAngleX + LeftForearmAngleXDelta*timeDelta;
+    g_RightForearmAngleZ = g_RightForearmAngleZ + RightForearmAngleZDelta*timeDelta;
+    g_RightForearmAngleX = g_RightForearmAngleX + RightForearmAngleXDelta*timeDelta;
 
-    g_RightArmAngleX = g_RightArmAngleX - 3*timeDelta;
-    g_RightArmAngleZ = g_RightArmAngleZ - 2*timeDelta;
-    g_LeftArmAngleX = g_LeftArmAngleX - 2*timeDelta;
-    g_LeftArmAngleZ = g_LeftArmAngleZ + 2*timeDelta;
+    g_RightArmAngleX = g_RightArmAngleX + RightArmAngleXDelta*timeDelta;
+    g_RightArmAngleZ = g_RightArmAngleZ + RightArmAngleZDelta*timeDelta;
+    g_LeftArmAngleX = g_LeftArmAngleX + LeftArmAngleXDelta*timeDelta;
+    g_LeftArmAngleZ = g_LeftArmAngleZ + LeftArmAngleZDelta*timeDelta;
 
 
-    g_RightLegAngleX = g_RightLegAngleX - 2.2*timeDelta;
-    g_RightLegAngleZ = g_RightLegAngleZ - 1*timeDelta;
-    g_RightLowerLegAngleX = g_RightLowerLegAngleX + 3.4*timeDelta;
-    g_RightLowerLegAngleZ = g_RightLowerLegAngleZ + 1*timeDelta;
-    g_LeftLegAngleX = g_LeftLegAngleX - 1*timeDelta;
-    g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + 4.5*timeDelta;
-    g_LeftLegAngleZ = g_LeftLegAngleZ + 1.2*timeDelta;
+    g_RightLegAngleX = g_RightLegAngleX + RightLegAngleXDelta*timeDelta;
+    g_RightLegAngleZ = g_RightLegAngleZ + RightLegAngleZDelta*timeDelta;
+    g_RightLowerLegAngleX = g_RightLowerLegAngleX + RightLowerLegAngleXDelta*timeDelta;
+    g_RightLowerLegAngleZ = g_RightLowerLegAngleZ + RightLowerLegAngleZDelta*timeDelta;
+    g_LeftLegAngleX = g_LeftLegAngleX + LeftLegAngleXDelta*timeDelta;
+    g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + LeftLowerLegAngleXDelta*timeDelta;
+    g_LeftLegAngleZ = g_LeftLegAngleZ + LeftLegAngleZDelta*timeDelta;
 }
 
 void moveLeftArmForwards(int dir){
@@ -881,6 +1017,28 @@ void clearAngles(){
     g_LeftLegAngleX = 0.0f;
     g_LeftLowerLegAngleX = 0.0f;
     g_LeftLegAngleZ = 0.0f;
+}
+
+void smoothTransition(){
+    int smoothing = 2;
+    g_LeftForearmAngleZ = g_LeftForearmAngleZ/smoothing;
+    g_LeftForearmAngleX = g_LeftForearmAngleX/smoothing;
+    g_RightForearmAngleZ = g_RightForearmAngleZ/smoothing;
+    g_RightForearmAngleX = g_RightForearmAngleX/smoothing;
+
+    g_RightArmAngleX = g_RightArmAngleX/smoothing;
+    g_RightArmAngleZ = g_RightArmAngleZ/smoothing;
+    g_LeftArmAngleX = g_LeftArmAngleX/smoothing;
+    g_LeftArmAngleZ = g_LeftArmAngleZ/smoothing;
+
+
+    g_RightLegAngleX = g_RightLegAngleX/smoothing;
+    g_RightLegAngleZ = g_RightLegAngleZ/smoothing;
+    g_RightLowerLegAngleX = g_RightLowerLegAngleX/smoothing;
+    g_RightLowerLegAngleZ = g_RightLowerLegAngleZ/smoothing;
+    g_LeftLegAngleX = g_LeftLegAngleX/smoothing;
+    g_LeftLowerLegAngleX = g_LeftLowerLegAngleX/smoothing;
+    g_LeftLegAngleZ = g_LeftLegAngleZ/smoothing;
 }
 
 void lowLeftLeg(){
@@ -1593,32 +1751,26 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
-    // O código abaixo implementa a seguinte lógica:
-    //   Se apertar tecla X       então g_AngleX += delta;
-    //   Se apertar tecla shift+X então g_AngleX -= delta;
-    //   Se apertar tecla Y       então g_AngleY += delta;
-    //   Se apertar tecla shift+Y então g_AngleY -= delta;
-    //   Se apertar tecla Z       então g_AngleZ += delta;
-    //   Se apertar tecla shift+Z então g_AngleZ -= delta;
-
     float delta = 3.141592 / 16; // 22.5 graus, em radianos.
 
-    if (key == GLFW_KEY_X && action == GLFW_PRESS)
-    {
-        g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
+
+    if ((key == GLFW_KEY_LEFT || key == GLFW_KEY_A) && action == GLFW_PRESS){
+        if(started && track > 0){
+          //movement = 4;
+          track--;
+          timeWhenLeftPressed = glfwGetTime();
+        }
     }
 
-    if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-    {
-        g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
+    if ((key == GLFW_KEY_RIGHT || key == GLFW_KEY_D) && action == GLFW_PRESS){
+        if(started && track < 2){
+          //movement = 3;
+          track++;
+          timeWhenRightPressed = glfwGetTime();
+        }
     }
-    if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-    {
-        g_AngleZ += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
     // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.
-    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    if ((key == GLFW_KEY_SPACE || key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_PRESS)
     {
         //g_AngleX = 0.0f;
         //g_AngleY = 0.0f;
@@ -1627,9 +1779,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         //g_ForearmAngleZ = 0.0f;
         //g_TorsoPositionX = 0.0f;
         //g_TorsoPositionY = 0.0f;
-        if(timeWhenSpacePressed == 0){
+        if(timeWhenSpacePressed == 0 && started){
             jumpStep = 1;
             movement = 1;
+            spacePressed = true;
             timeWhenSpacePressed = glfwGetTime();
         }
 
