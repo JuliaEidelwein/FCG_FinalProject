@@ -1,20 +1,3 @@
-//     Universidade Federal do Rio Grande do Sul
-//             Instituto de Informática
-//       Departamento de Informática Aplicada
-//
-//    INF01047 Fundamentos de Computação Gráfica
-//               Prof. Eduardo Gastal
-//
-//                   LABORATÓRIO 3
-//
-
-// Arquivos "headers" padrões de C podem ser incluídos em um
-// programa C++, sendo necessário somente adicionar o caractere
-// "c" antes de seu nome, e remover o sufixo ".h". Exemplo:
-//    #include <stdio.h> // Em C
-//  vira
-//    #include <cstdio> // Em C++
-//
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -188,6 +171,17 @@ float g_LeftLowerLegAngleZ = 0.0f;
 float g_RightLowerLegAngleX = 0.0f;
 float g_RightLowerLegAngleZ = 0.0f;
 
+void liftLeftLeg();
+void liftRightLeg();
+void fall();
+void jump();
+void clearAngles();
+void lowLeftLeg();
+void lowRightLeg();
+void moveLeftArmBackwards(int dir);
+void moveRightArmBackwards(int dir);
+void moveLeftArmForwards(int dir);
+void moveRightArmForwards(int dir);
 
 
 // Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
@@ -195,7 +189,7 @@ bool g_UsePerspectiveProjection = true;
 
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
-
+double timeDelta;
 int main()
 {
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
@@ -320,9 +314,8 @@ int main()
 
     double prevTime = glfwGetTime();
     double currentTime;
-    double timeDelta;
-
-    int jumpDuration = 0;
+    //double timeDelta;
+    int obstacleDelta = 0;
 
 
     // Ficamos em loop, renderizando, até que o usuário feche a janela
@@ -443,77 +436,20 @@ int main()
         //if(jumpStep > 0){
         switch(movement){
         case -1: //Falling
-            //if(currentTime - timeWhenSpacePressed < 0.9){
             if(!PlayerFloorColision(0.0, g_TorsoPositionY)){
-                g_TorsoPositionY = g_TorsoPositionY - 2*timeDelta;
-
-                g_LeftForearmAngleZ = g_LeftForearmAngleZ - 1.7*timeDelta;
-                g_LeftForearmAngleX = g_LeftForearmAngleX + 5*timeDelta;
-                g_RightForearmAngleZ = g_RightForearmAngleZ + 1.7*timeDelta;
-                g_RightForearmAngleX = g_RightForearmAngleX + 3*timeDelta;
-
-                g_RightArmAngleX = g_RightArmAngleX + 3*timeDelta;
-                g_RightArmAngleZ = g_RightArmAngleZ + 2*timeDelta;
-                g_LeftArmAngleX = g_LeftArmAngleX + 2*timeDelta;
-                g_LeftArmAngleZ = g_LeftArmAngleZ - 2*timeDelta;
-
-
-                g_RightLegAngleX = g_RightLegAngleX + 2.2*timeDelta;
-                g_RightLegAngleZ = g_RightLegAngleZ + 1*timeDelta;
-                g_RightLowerLegAngleX = g_RightLowerLegAngleX - 3.4*timeDelta;
-                g_RightLowerLegAngleZ = g_RightLowerLegAngleZ - 1.3*timeDelta;
-                g_LeftLegAngleX = g_LeftLegAngleX + 2.5*timeDelta;
-                g_LeftLowerLegAngleX = g_LeftLowerLegAngleX - 4.5*timeDelta;
-                g_LeftLegAngleZ = g_LeftLegAngleZ - 1*timeDelta;
+                fall();
             } else {
                 timeWhenSpacePressed = 0;
                 if(started){
                     movement = 2;
-
-                    g_LeftForearmAngleZ = 0.0f;
-                    g_LeftForearmAngleX = 0.0f;
-                    g_RightForearmAngleZ = 0.0f;
-                    g_RightForearmAngleX = 0.0f;
-
-                    g_RightArmAngleX = 0.0f;
-                    g_RightArmAngleZ = 0.0f;
-                    g_LeftArmAngleX = 0.0f;
-                    g_LeftArmAngleZ = 0.0f;
-
-
-                    g_RightLegAngleX = 0.0f;
-                    g_RightLegAngleZ = 0.0f;
-                    g_RightLowerLegAngleX = 0.0f;
-                    g_RightLowerLegAngleZ = 0.0f;
-                    g_LeftLegAngleX = 0.0f;
-                    g_LeftLowerLegAngleX = 0.0f;
-                    g_LeftLegAngleZ = 0.0f;
+                    clearAngles();
                     legUp = 'n';
                 }
             }
             break;
         case 1://Jumping
             if(currentTime - timeWhenSpacePressed < 0.4){
-                g_TorsoPositionY = g_TorsoPositionY + 2*timeDelta;
-
-                g_LeftForearmAngleZ = g_LeftForearmAngleZ + 1.7*timeDelta;
-                g_LeftForearmAngleX = g_LeftForearmAngleX - 5*timeDelta;
-                g_RightForearmAngleZ = g_RightForearmAngleZ - 1.7*timeDelta;
-                g_RightForearmAngleX = g_RightForearmAngleX - 3*timeDelta;
-
-                g_RightArmAngleX = g_RightArmAngleX - 3*timeDelta;
-                g_RightArmAngleZ = g_RightArmAngleZ - 2*timeDelta;
-                g_LeftArmAngleX = g_LeftArmAngleX - 2*timeDelta;
-                g_LeftArmAngleZ = g_LeftArmAngleZ + 2*timeDelta;
-
-
-                g_RightLegAngleX = g_RightLegAngleX - 2.2*timeDelta;
-                g_RightLegAngleZ = g_RightLegAngleZ - 1*timeDelta;
-                g_RightLowerLegAngleX = g_RightLowerLegAngleX + 3.4*timeDelta;
-                g_RightLowerLegAngleZ = g_RightLowerLegAngleZ + 1.3*timeDelta;
-                g_LeftLegAngleX = g_LeftLegAngleX - 2.5*timeDelta;
-                g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + 4.5*timeDelta;
-                g_LeftLegAngleZ = g_LeftLegAngleZ + 1*timeDelta;
+                jump();
             } else {
                 movement = 0;
             }
@@ -522,69 +458,43 @@ int main()
             switch(legUp){
             case 'n': //none
                 if(prevLegUp == 'l' or prevLegUp == 'n'){
-                    g_RightLegAngleX = g_RightLegAngleX - 2.2*timeDelta;
-                    g_RightLowerLegAngleX = g_RightLowerLegAngleX + 2*timeDelta;
-                    g_LeftLegAngleX = g_LeftLegAngleX + 2.5*timeDelta;
-                    g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + 1*timeDelta;
+                    liftRightLeg();
+                    moveLeftArmForwards(1);
+                    moveRightArmBackwards(1);
                     if(g_RightLegAngleX <= -2){
                         legUp = 'r';
                     }
                 } else {
-                    g_RightLegAngleX = g_RightLegAngleX + 0.2*timeDelta;
-                    g_RightLowerLegAngleX = g_RightLowerLegAngleX + 1*timeDelta;
-                    g_LeftLegAngleX = g_LeftLegAngleX - 2.2*timeDelta;
-                    g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + 2*timeDelta;
+                    liftLeftLeg();
+                    moveRightArmForwards(1);
+                    moveLeftArmBackwards(1);
                     if(g_LeftLegAngleX <= -2){
                         legUp = 'l';
                     }
                 }
                 break;
             case 'r': //right
-                //g_RightLowerLegAngleX = g_RightLowerLegAngleX - 2*timeDelta;
-                //g_LeftLegAngleX = g_LeftLegAngleX + 0.3*timeDelta;
-                //if(g_RightLowerLegAngleX <= 1.5){
-                    g_RightLegAngleX = g_RightLegAngleX + 2.2*timeDelta;
-                    g_RightLowerLegAngleX = g_RightLowerLegAngleX - 2*timeDelta;
-                    //g_RightLowerLegAngleX = g_RightLowerLegAngleX + 2*timeDelta;
-                    g_LeftLegAngleX = g_LeftLegAngleX - 3.1*timeDelta;
-                    //g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + 1*timeDelta;
-                    //printf("%f\n", g_RightLegAngleX);
-                    if(g_RightLegAngleX >= 0){
-                        //printf("%f\n", g_RightLegAngleX);
-                        g_RightLegAngleX = 0.0f;
-                        g_RightLegAngleZ = 0.0f;
-                        g_RightLowerLegAngleX = 0.0f;
-                        g_RightLowerLegAngleZ = 0.0f;
-                        g_LeftLegAngleX = 0.0f;
-                        g_LeftLowerLegAngleX = 0.0f;
-                        g_LeftLegAngleZ = 0.0f;
-                        prevLegUp = 'r';
-                        legUp = 'n';
-                    }
-                //}// else {
-                //    g_RightLowerLegAngleX = g_RightLowerLegAngleX - 2*timeDelta;
-                //    g_LeftLegAngleX = g_LeftLegAngleX + 0.3*timeDelta;
-                //}
+                lowRightLeg();
+                moveLeftArmForwards(-1);
+                moveRightArmBackwards(-1);
+                if(g_RightLegAngleX >= 0){
+                    clearAngles();
+                    prevLegUp = 'r';
+                    legUp = 'n';
+                }
                 break;
             case 'l': // left
-                g_RightLegAngleX = g_RightLegAngleX - 0.8*timeDelta;
-                g_LeftLegAngleX = g_LeftLegAngleX + 4*timeDelta;
+                lowLeftLeg();
+                moveRightArmForwards(-1);
+                moveLeftArmBackwards(-1);
                 if(g_LeftLegAngleX >= 0){
                     //printf("%f\n", g_RightLegAngleX);
-                    g_RightLegAngleX = 0.0f;
-                    g_RightLegAngleZ = 0.0f;
-                    g_RightLowerLegAngleX = 0.0f;
-                    g_RightLowerLegAngleZ = 0.0f;
-                    g_LeftLegAngleX = 0.0f;
-                    g_LeftLowerLegAngleX = 0.0f;
-                    g_LeftLegAngleZ = 0.0f;
+                    clearAngles();
                     prevLegUp = 'l';
                     legUp = 'n';
                 }
                 break;
             }
-            break;
-        case 3:
             break;
         case 0://Nothing
         default:
@@ -592,20 +502,7 @@ int main()
                 movement = -1;
             }
         }
-            /*if(movement == 1){
-                if(jumpStep < 15){
-                    g_TorsoPositionY = g_TorsoPositionY + 0.06f;
-                    jumpStep++;
-                } else {
-                    movement = 0;
-                    jumpStep --;
-                }
-            } else {
-                if(movement == -1){
-                    g_TorsoPositionY = g_TorsoPositionY - 0.06f;
-                    jumpStep --;
-                }
-            }*/
+
         //}
         // Guardamos matriz model atual na pilha
         PushMatrix(model);
@@ -767,19 +664,20 @@ int main()
             PopMatrix(model);
         PopMatrix(model);
 
-
+        int obstacleSpeed = started ? 200 : 0;///criar uma estrutura para cada obstaculo
+        obstacleDelta = obstacleDelta + obstacleSpeed*timeDelta; ///criar uma estrutura para cada obstaclo
         model = Matrix_Identity();
-        model = model * Matrix_Translate(0.0f, 1.01f, 3.0f);
+        model = model * Matrix_Translate(0.0f, 1.01f, 3.0f - obstacleDelta);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawCube(render_as_black_uniform);
 
         model = Matrix_Identity();
-        model = model * Matrix_Translate(0.0f, 1.01f, 0.0f);
+        model = model * Matrix_Translate(0.0f, 1.01f, 0.0f - obstacleDelta);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawCube(render_as_black_uniform);
 
         model = Matrix_Identity();
-        model = model * Matrix_Translate(0.0f, 1.01f, -2.0f);
+        model = model * Matrix_Translate(0.0f, 1.01f, -2.0f - obstacleDelta);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawCube(render_as_black_uniform);
 
@@ -860,6 +758,125 @@ int main()
 
     // Fim do programa
     return 0;
+}
+
+void liftLeftLeg(){
+    g_RightLegAngleX = g_RightLegAngleX + 0.2*timeDelta;
+    g_RightLowerLegAngleX = g_RightLowerLegAngleX + 1*timeDelta;
+    g_LeftLegAngleX = g_LeftLegAngleX - 2.2*timeDelta;
+    g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + 2*timeDelta;
+}
+void liftRightLeg(){
+    g_RightLegAngleX = g_RightLegAngleX - 2.2*timeDelta;
+    g_RightLowerLegAngleX = g_RightLowerLegAngleX + 2*timeDelta;
+    g_LeftLegAngleX = g_LeftLegAngleX + 2.5*timeDelta;
+    g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + 1*timeDelta;
+}
+
+void fall(){
+    g_TorsoPositionY = g_TorsoPositionY - 2*timeDelta;
+
+    g_LeftForearmAngleZ = g_LeftForearmAngleZ - 1.7*timeDelta;
+    g_LeftForearmAngleX = g_LeftForearmAngleX + 5*timeDelta;
+    g_RightForearmAngleZ = g_RightForearmAngleZ + 1.7*timeDelta;
+    g_RightForearmAngleX = g_RightForearmAngleX + 3*timeDelta;
+
+    g_RightArmAngleX = g_RightArmAngleX + 3*timeDelta;
+    g_RightArmAngleZ = g_RightArmAngleZ + 2*timeDelta;
+    g_LeftArmAngleX = g_LeftArmAngleX + 2*timeDelta;
+    g_LeftArmAngleZ = g_LeftArmAngleZ - 2*timeDelta;
+
+
+    g_RightLegAngleX = g_RightLegAngleX + 2.2*timeDelta;
+    g_RightLegAngleZ = g_RightLegAngleZ + 1*timeDelta;
+    g_RightLowerLegAngleX = g_RightLowerLegAngleX - 3.4*timeDelta;
+    g_RightLowerLegAngleZ = g_RightLowerLegAngleZ - 1*timeDelta;
+    g_LeftLegAngleX = g_LeftLegAngleX + 1*timeDelta;
+    g_LeftLowerLegAngleX = g_LeftLowerLegAngleX - 4.5*timeDelta;
+    g_LeftLegAngleZ = g_LeftLegAngleZ - 1.2*timeDelta;
+}
+
+void jump(){
+    g_TorsoPositionY = g_TorsoPositionY + 2*timeDelta;
+
+    g_LeftForearmAngleZ = g_LeftForearmAngleZ + 1.7*timeDelta;
+    g_LeftForearmAngleX = g_LeftForearmAngleX - 5*timeDelta;
+    g_RightForearmAngleZ = g_RightForearmAngleZ - 1.7*timeDelta;
+    g_RightForearmAngleX = g_RightForearmAngleX - 3*timeDelta;
+
+    g_RightArmAngleX = g_RightArmAngleX - 3*timeDelta;
+    g_RightArmAngleZ = g_RightArmAngleZ - 2*timeDelta;
+    g_LeftArmAngleX = g_LeftArmAngleX - 2*timeDelta;
+    g_LeftArmAngleZ = g_LeftArmAngleZ + 2*timeDelta;
+
+
+    g_RightLegAngleX = g_RightLegAngleX - 2.2*timeDelta;
+    g_RightLegAngleZ = g_RightLegAngleZ - 1*timeDelta;
+    g_RightLowerLegAngleX = g_RightLowerLegAngleX + 3.4*timeDelta;
+    g_RightLowerLegAngleZ = g_RightLowerLegAngleZ + 1*timeDelta;
+    g_LeftLegAngleX = g_LeftLegAngleX - 1*timeDelta;
+    g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + 4.5*timeDelta;
+    g_LeftLegAngleZ = g_LeftLegAngleZ + 1.2*timeDelta;
+}
+
+void moveLeftArmForwards(int dir){
+    g_LeftForearmAngleX = g_LeftForearmAngleX - dir*2.3*timeDelta;
+
+    g_LeftArmAngleX = g_LeftArmAngleX - dir*1*timeDelta;
+    g_LeftArmAngleZ = g_LeftArmAngleZ + dir*0.2*timeDelta;
+}
+
+void moveRightArmForwards(int dir){
+    g_RightForearmAngleX = g_RightForearmAngleX - dir*2.3*timeDelta;
+
+    g_RightArmAngleX = g_RightArmAngleX - dir*1*timeDelta;
+    g_RightArmAngleZ = g_RightArmAngleZ - dir*0.2*timeDelta;
+}
+
+void moveRightArmBackwards(int dir){
+    g_RightForearmAngleX = g_RightForearmAngleX - dir*2*timeDelta;
+
+    g_RightArmAngleX = g_RightArmAngleX + dir*1*timeDelta;
+    g_RightArmAngleZ = g_RightArmAngleZ - dir*0.2*timeDelta;
+}
+
+void moveLeftArmBackwards(int dir){
+    g_LeftForearmAngleX = g_LeftForearmAngleX - dir*2*timeDelta;
+
+    g_LeftArmAngleX = g_LeftArmAngleX + dir*1*timeDelta;
+    g_LeftArmAngleZ = g_LeftArmAngleZ + dir*0.2*timeDelta;
+}
+
+void clearAngles(){
+    g_LeftForearmAngleZ = 0.0f;
+    g_LeftForearmAngleX = 0.0f;
+    g_RightForearmAngleZ = 0.0f;
+    g_RightForearmAngleX = 0.0f;
+
+    g_RightArmAngleX = 0.0f;
+    g_RightArmAngleZ = 0.0f;
+    g_LeftArmAngleX = 0.0f;
+    g_LeftArmAngleZ = 0.0f;
+
+
+    g_RightLegAngleX = 0.0f;
+    g_RightLegAngleZ = 0.0f;
+    g_RightLowerLegAngleX = 0.0f;
+    g_RightLowerLegAngleZ = 0.0f;
+    g_LeftLegAngleX = 0.0f;
+    g_LeftLowerLegAngleX = 0.0f;
+    g_LeftLegAngleZ = 0.0f;
+}
+
+void lowLeftLeg(){
+    g_RightLegAngleX = g_RightLegAngleX - 0.8*timeDelta;
+    g_LeftLegAngleX = g_LeftLegAngleX + 4*timeDelta;
+    g_LeftLowerLegAngleX = g_LeftLowerLegAngleX - 4*timeDelta;
+}
+void lowRightLeg(){
+    g_RightLegAngleX = g_RightLegAngleX + 2.2*timeDelta;
+    g_RightLowerLegAngleX = g_RightLowerLegAngleX - 2*timeDelta;
+    g_LeftLegAngleX = g_LeftLegAngleX - 3.1*timeDelta;
 }
 
 // Função que pega a matriz M e guarda a mesma no topo da pilha
