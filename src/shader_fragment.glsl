@@ -29,6 +29,7 @@ uniform mat4 projection;
 #define BLOCKADE 3
 #define BUS 4
 #define COW 5
+
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo

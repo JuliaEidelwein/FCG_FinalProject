@@ -322,12 +322,6 @@ int main(int argc, char* argv[])
     GLFWwindow* window;
     window = glfwCreateWindow(800, 800, "INF01047 - Julia Eidelwein (00274700) & Lucas Hagen (00274698)", NULL, NULL);
 
-    Obstacle obstacles[10];
-    for(int i = 0; i < 10; i++){
-        obstacles[i].model = Matrix_Identity()*Matrix_Translate(0.0f, 0.0f, -10.0f);
-        obstacles[i].moving = false;
-        obstacles[i].visible = false;
-    }
     if (!window)
     {
         glfwTerminate();
@@ -473,64 +467,6 @@ int main(int argc, char* argv[])
 
         AddRandomObstacles();
 
-        for(int i = 0; i < 10; i++){
-            if(obstacles[i].visible == true){
-                obstacles[i].model = obstacles[i].model*Matrix_Translate(0.0f, 0.02f, -1*(started ? 30 : 0)*timeDelta);
-                obstacles[i].z = obstacles[i].z -1*(started ? 30 : 0)*timeDelta;
-                obstacles[i].y = 0.02;
-            } else {
-                int r = rand()%100;
-                if(r >= 75){
-                    int sortedTrack = rand()%3;
-                    switch(sortedTrack){
-                    case 0:
-                        obstacles[i].x = -2.0f;
-                        obstacles[i].y = 1.0f;
-                        obstacles[i].z = (rand()%40 + 25);
-                        obstacles[i].model = Matrix_Identity()*Matrix_Translate(-2.0f, 1.0f, obstacles[i].z);
-                        obstacles[i].visible = true;
-                        break;
-                    case 1:
-                        obstacles[i].x = 0.0f;
-                        obstacles[i].y = 1.0f;
-                        obstacles[i].z = (rand()%40 + 25);
-                        obstacles[i].model = Matrix_Identity()*Matrix_Translate(0.0f, 1.0f, obstacles[i].z);
-                        obstacles[i].visible = true;
-                        break;
-                    case 2:
-                    default:
-                        obstacles[i].x = 2.0f;
-                        obstacles[i].y = 1.0f;
-                        obstacles[i].z = (rand()%40 + 25);
-                        obstacles[i].model = Matrix_Identity()*Matrix_Translate(2.0f, 1.0f, obstacles[i].z);
-                        obstacles[i].visible = true;
-                    }
-                }
-            }
-            if(obstacles[i].z < -15){
-                obstacles[i].visible = false;
-            } else {
-                glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(obstacles[i].model));
-                DrawCube(render_as_black_uniform);
-            }
-        }
-        /*int obstacleSpeed = started ? 170 : 0;///criar uma estrutura para cada obstaculo
-        obstacleDelta = obstacleDelta + obstacleSpeed*timeDelta; ///criar uma estrutura para cada obstaclo
-        glm::mat4 model = Matrix_Identity();
-        model = model * Matrix_Translate(0.0f, 1.01f, 3.0f - obstacleDelta);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        DrawCube(render_as_black_uniform);
-
-        model = Matrix_Identity();
-        model = model * Matrix_Translate(0.0f, 1.01f, 0.0f - obstacleDelta);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        DrawCube(render_as_black_uniform);
-
-        model = Matrix_Identity();
-        model = model * Matrix_Translate(0.0f, 1.01f, -2.0f - obstacleDelta);
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        DrawCube(render_as_black_uniform);
-        */
         glm::mat4 model = Matrix_Identity();
         model = Matrix_Identity();
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
@@ -696,7 +632,7 @@ bool IsBehind(const glm::mat4& m) {
 void MoveObstacles() {
     std::list<glm::mat4>::iterator it;
     for (it = cows.begin(); it != cows.end(); ++it) {
-        (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -0.01f);
+        (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
     }
 
     cows.remove_if(IsBehind);
