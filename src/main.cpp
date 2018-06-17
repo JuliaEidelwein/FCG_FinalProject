@@ -116,7 +116,7 @@ float camera_pitch = 0.0f;
 float camera_yaw = PI / 2;
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
-glm::vec4 camera_position_c  = glm::vec4(0.0f, 2.0f, -8.0f, 1.0f); // Ponto "c", centro da câmera
+glm::vec4 camera_position_c  = glm::vec4(0.1f, 1.9f, -6.4f, 1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
 
 glm::vec4 camera_view_vector = glm::vec4(cos(camera_yaw) * cos(camera_pitch) , sin(camera_pitch), sin(camera_yaw) * cos(camera_pitch), 0.0f);
@@ -354,7 +354,6 @@ int main()
 
         BuildCamera(view_uniform, projection_uniform);
 
-        // ##### TAREFAS DO LABORATÓRIO 3
         BuildCharacter(currentTime, model_uniform, render_as_black_uniform, program_id);
 
         int obstacleSpeed = started ? 200 : 0;///criar uma estrutura para cada obstaculo
@@ -561,13 +560,32 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
             movement = -1;
         }
     }
-	    if(currentTime - timeWhenRightPressed < 0.3){
-	        g_TorsoPositionX = g_TorsoPositionX - 4*timeDelta;
+    if(currentTime - timeWhenRightPressed < 0.4 && timeWhenRightPressed != 0){
+        g_TorsoPositionX = g_TorsoPositionX - 4.3*timeDelta;
+        camera_position_c.x = camera_position_c.x - 4.3*timeDelta;
 
-	    }
-	    if(currentTime - timeWhenLeftPressed < 0.3){
-	        g_TorsoPositionX = g_TorsoPositionX + 4*timeDelta;
-	    }
+    } else {
+        if(currentTime - timeWhenLeftPressed < 0.4 && timeWhenLeftPressed != 0){
+            g_TorsoPositionX = g_TorsoPositionX + 4.3*timeDelta;
+            camera_position_c.x = camera_position_c.x + 4.3*timeDelta;
+        } else {
+            switch(track){
+            case 0:
+                camera_position_c.x = 2.1f;
+                g_TorsoPositionX = 2.0f;
+                break;
+            case 1:
+                camera_position_c.x = 0.1f;
+                g_TorsoPositionX = 0.0f;
+                break;
+            case 2:
+            default:
+                camera_position_c.x = -1.9f;
+                g_TorsoPositionX = -2.0f;
+            }
+        }
+    }
+
 
     //}
     // Guardamos matriz model atual na pilha
@@ -654,10 +672,6 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
         model = model * Matrix_Translate(-0.315f, 0.05f, 0.0f);
         model = model * Matrix_Rotate_Y(3.141592) * Matrix_Rotate_X(3.141592);
         PushMatrix(model);
-            model = model
-                  * Matrix_Rotate_Z(g_AngleZ)  // TERCEIRO rotação Z de Euler
-                  * Matrix_Rotate_Y(g_AngleY)  // SEGUNDO rotação Y de Euler
-                  * Matrix_Rotate_X(g_AngleX); // PRIMEIRO rotação X de Euler
             PushMatrix(model);
                 model = model * Matrix_Scale(0.25f, 0.25f, 0.25f);
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
@@ -733,11 +747,14 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
 
 void BuildCamera(GLint view_uniform, GLint projection_uniform) {
     glm::mat4 view;
+    glm::vec4 look_at = glm::vec4(0.0f, 1.5f, 0.0f, 1.0f);
 
     if(free_cam_enabled) {
         view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
     } else {
         glm::vec4 new_cam_pos = camera_position_c + (camera_view_vector * g_CameraDistance) / norm(camera_view_vector);
+        //new_cam_pos.z = new_cam_pos.z - 8.0f;
+        //new_cam_pos.y = new_cam_pos.y + 1.5f;
         view = Matrix_Camera_View(new_cam_pos, -camera_view_vector, camera_up_vector);
     }
 
@@ -783,6 +800,7 @@ void liftRightLeg(){
 
 void fall(){
     g_TorsoPositionY = g_TorsoPositionY - 2*timeDelta;
+    camera_position_c.y = camera_position_c.y - 2*timeDelta;
 
     g_LeftForearmAngleZ = g_LeftForearmAngleZ - 1.7*timeDelta;
     g_LeftForearmAngleX = g_LeftForearmAngleX + 5*timeDelta;
@@ -901,6 +919,7 @@ void jump(){
     }
 
     g_TorsoPositionY = g_TorsoPositionY + 2*timeDelta;
+    camera_position_c.y = camera_position_c.y + 2*timeDelta;
 
     g_LeftForearmAngleZ = g_LeftForearmAngleZ + LeftForearmAngleZDelta*timeDelta;
     g_LeftForearmAngleX = g_LeftForearmAngleX + LeftForearmAngleXDelta*timeDelta;
