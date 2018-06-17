@@ -121,6 +121,11 @@ void main()
         Ks = vec3(0.8, 0.8, 0.8);
         Ka = Kd / 2;
         q = 80.0;
+    } else if(object_id == BUS) {
+        Kd = vec3(0.6, 0.6, 0.6);
+        Ks = vec3(0.8, 0.8, 0.8);
+        Ka = Kd / 2;
+        q = 20.0;
     }
 
     // Espectro da fonte de iluminação

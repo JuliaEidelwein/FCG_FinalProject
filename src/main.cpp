@@ -207,6 +207,7 @@ bool free_cam_enabled = true;
 
 std::list<glm::mat4> cows;
 std::list<glm::mat4> blockades;
+std::list<glm::mat4> busses;
 
 /**
     MOVIMENTACAO
@@ -513,17 +514,11 @@ int main(int argc, char* argv[])
         glUniform1i(object_id_uniform, PLANE);
         DrawVirtualObject("plane");*/
 
-        model = Matrix_Identity();
         model = Matrix_Translate(1.0f, 10.0f, 0.0f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, BLOCKADE);
         DrawVirtualObject("blockade");
 
-        model = Matrix_Translate(2.0f,0.0f,10.0f)*
-                Matrix_Scale(0.25f, 0.3f, 0.3f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, BUS);
-        DrawVirtualObject("bus");
 
         std::list<glm::mat4>::iterator it;
         for (it = cows.begin(); it != cows.end(); ++it) {
@@ -536,6 +531,12 @@ int main(int argc, char* argv[])
             glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(*it));
             glUniform1i(object_id_uniform, BLOCKADE);
             DrawVirtualObject("RoadBlockade_01");
+        }
+
+        for (it = busses.begin(); it != busses.end(); ++it) {
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(*it));
+            glUniform1i(object_id_uniform, BUS);
+            DrawVirtualObject("bus");
         }
 
         /*model = Matrix_Identity();
@@ -612,7 +613,7 @@ int main(int argc, char* argv[])
 void AddRandomObstacles() {
     float x = (float)rand()/(float)RAND_MAX;
 
-    if(x <= 0.001) {
+    if(x <= 0.005) {
 
         float l = (float)rand()/(float)(RAND_MAX/3);
         if(l <= 1) {
@@ -623,7 +624,12 @@ void AddRandomObstacles() {
             l = 2.5;
         }
 
-        if(rand()/(float)RAND_MAX < 0.3)
+        float s = rand()/(float)RAND_MAX;
+
+        if(s < 0.06)
+            busses.push_back(Matrix_Scale(0.25f, 0.3f, 0.3f) * Matrix_Rotate(PI, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)) *
+                             Matrix_Translate(l * 3.0f, 0.0f, -40.0f));
+        else if(s < 0.4)
             cows.push_back(Matrix_Scale(0.8f, 0.8f, 0.8f) * Matrix_Translate(l, 0.65f, 20.0f));
         else
             blockades.push_back(Matrix_Scale(0.4f, 1.2f, 0.8f) * Matrix_Translate(l * 2.0f, 0.0f, 20.0f));
@@ -642,9 +648,13 @@ void MoveObstacles() {
     for (it = blockades.begin(); it != blockades.end(); ++it) {
         (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
     }
+    for (it = busses.begin(); it != busses.end(); ++it) {
+        (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, 30.0f * timeDelta);
+    }
 
     cows.remove_if(IsBehind);
     blockades.remove_if(IsBehind);
+    busses.remove_if(IsBehind);
 }
 
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniform, GLuint program_id) {
