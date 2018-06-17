@@ -156,12 +156,10 @@ void main()
         color = newInterpColor;
     }
 
-    if(object_id == BUNNY || object_id == SPHERE){
-        if(Kd0 == Kd1){ ///testa se carregou somente a primeira imagem
-            color = Kd2 * (lambert + 0.5);
-        } else {
-            color = Kd2 * (lambert - 0.5);
-        }
+    if(object_id == BUNNY){
+        color = Kd2 * (lambert + 0.5);
+    } else if (object_id == SPHERE) {
+        color = Kd0 * (lambert + 0.5);
     }
 
     //}

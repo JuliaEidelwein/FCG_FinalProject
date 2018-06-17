@@ -188,12 +188,15 @@ float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
 glm::vec4 camera_position_c  = glm::vec4(-0.05f, 2.0f, -6.3f, 1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
-
 glm::vec4 camera_view_vector = glm::vec4(cos(camera_yaw) * cos(camera_pitch) , sin(camera_pitch), sin(camera_yaw) * cos(camera_pitch), 0.0f);
 glm::vec4 w = -camera_view_vector;
 glm::vec4 u = crossproduct(camera_up_vector, w);
 
 bool free_cam_enabled = true;
+
+/**
+    MOVIMENTACAO
+*/
 
 int jumpStep = 0;
 int movement = 0;
@@ -276,6 +279,7 @@ GLint projection_uniform;
 GLint object_id_uniform;
 GLint bbox_min_uniform;
 GLint bbox_max_uniform;
+GLint render_as_black_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -395,45 +399,12 @@ int main(int argc, char* argv[])
         BuildTrianglesAndAddToVirtualScene(&model);
     }
 
-    // Note que o caminho para os arquivos "shader_vertex.glsl" e
-    // "shader_fragment.glsl" estão fixados, sendo que assumimos a existência
-    // da seguinte estrutura no sistema de arquivos:
-    //
-    //    + FCG_Lab_0X/
-    //    |
-    //    +--+ bin/
-    //    |  |
-    //    |  +--+ Release/  (ou Debug/ ou Linux/)
-    //    |     |
-    //    |     o-- main.exe
-    //    |
-    //    +--+ src/
-    //       |
-    //       o-- shader_vertex.glsl
-    //       |
-    //       o-- shader_fragment.glsl
-    //       |
-    //       o-- ...
-    //
-    GLuint vertex_shader_id = LoadShader_Vertex("../../src/shader_vertex.glsl");
-    GLuint fragment_shader_id = LoadShader_Fragment("../../src/shader_fragment.glsl");
-
-    // Criamos um programa de GPU utilizando os shaders carregados acima
-    GLuint program_id = CreateGpuProgram(vertex_shader_id, fragment_shader_id);
-
     // Construímos a representação de um triângulo
     GLuint vertex_array_object_id = BuildTriangles();
 
     // Inicializamos o código para renderização de texto.
     TextRendering_Init();
 
-    // Buscamos o endereço das variáveis definidas dentro do Vertex Shader.
-    // Utilizaremos estas variáveis para enviar dados para a placa de vídeo
-    // (GPU)! Veja arquivo "shader_vertex.glsl".
-    GLint model_uniform           = glGetUniformLocation(program_id, "model"); // Variável da matriz "model"
-    GLint view_uniform            = glGetUniformLocation(program_id, "view"); // Variável da matriz "view" em shader_vertex.glsl
-    GLint projection_uniform      = glGetUniformLocation(program_id, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
-    GLint render_as_black_uniform = glGetUniformLocation(program_id, "render_as_black"); // Variável booleana em shader_vertex.glsl
     // Habilitamos o Z-buffer. Veja slide 66 do documento "Aula_13_Clipping_and_Culling.pdf".
     glEnable(GL_DEPTH_TEST);
 
@@ -1114,6 +1085,7 @@ void LoadShadersFromFiles()
     object_id_uniform       = glGetUniformLocation(program_id, "object_id"); // Variável "object_id" em shader_fragment.glsl
     bbox_min_uniform        = glGetUniformLocation(program_id, "bbox_min");
     bbox_max_uniform        = glGetUniformLocation(program_id, "bbox_max");
+    render_as_black_uniform = glGetUniformLocation(program_id, "render_as_black");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(program_id);
