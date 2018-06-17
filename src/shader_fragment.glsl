@@ -27,6 +27,7 @@ uniform mat4 projection;
 #define BUNNY  1
 #define PLANE  2
 #define BLOCKADE 3
+#define BUS 4
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -98,7 +99,7 @@ void main()
         V = ((M_PI/2) + V)/M_PI;
         U = (M_PI + U)/(2*M_PI);
     }
-    else if ( object_id == BUNNY )
+    else if ( object_id == BUNNY || object_id == BUS)
     {
         // PREENCHA AQUI as coordenadas de textura do coelho, computadas com
         // projeção planar XY em COORDENADAS DO MODELO. Utilize como referência

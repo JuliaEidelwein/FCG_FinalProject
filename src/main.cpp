@@ -88,7 +88,7 @@ struct ObjModel
 
 	    // Este construtor lê o modelo de um arquivo utilizando a biblioteca tinyobjloader.
 	    // Veja: https://github.com/syoyo/tinyobjloader
-	    ObjModel(const char* filename, const char* basepath = NULL, bool triangulate = true)
+	    ObjModel(const char* filename, const char* basepath = "../../data/", bool triangulate = true)
 	    {
 	        printf("Carregando modelo \"%s\"... ", filename);
 
@@ -127,7 +127,14 @@ struct SceneObject
 
 struct Obstacle
 {
-    SceneObject objetc;
+    //SceneObject objetc;
+    float z;
+    float y;
+    float x;
+    float height;
+    float width;
+    bool visible;
+    glm::mat4 model;
     bool moving;
 };
 
@@ -300,6 +307,13 @@ int main(int argc, char* argv[])
     // de pixels, e com título "INF01047 ...".
     GLFWwindow* window;
     window = glfwCreateWindow(800, 800, "INF01047 - Julia Eidelwein (00274700) & Lucas Hagen (00274698)", NULL, NULL);
+
+    Obstacle obstacles[10];
+    for(int i = 0; i < 10; i++){
+        obstacles[i].model = Matrix_Identity()*Matrix_Translate(0.0f, 0.0f, -10.0f);
+        obstacles[i].moving = false;
+        obstacles[i].visible = false;
+    }
     if (!window)
     {
         glfwTerminate();
@@ -366,6 +380,10 @@ int main(int argc, char* argv[])
     ObjModel blockade("../../data/roadBlockade.obj");
     ComputeNormals(&blockade);
     BuildTrianglesAndAddToVirtualScene(&blockade);
+
+    ObjModel busmodel("../../data/bus.obj");
+    ComputeNormals(&busmodel);
+    BuildTrianglesAndAddToVirtualScene(&busmodel);
 
     /*ObjModel floormodel("../../data/floor.obj");
     ComputeNormals(&floormodel);
@@ -468,7 +486,47 @@ int main(int argc, char* argv[])
 
         BuildCharacter(currentTime, model_uniform, render_as_black_uniform, program_id);
 
-        int obstacleSpeed = started ? 200 : 0;///criar uma estrutura para cada obstaculo
+        for(int i = 0; i < 10; i++){
+            if(obstacles[i].visible == true){
+                obstacles[i].model = obstacles[i].model*Matrix_Translate(0.0f, 0.0f, -1*(started ? 35 : 0)*timeDelta);
+                obstacles[i].z = obstacles[i].z -1*(started ? 35 : 0)*timeDelta;
+            } else {
+                int r = rand()%100;
+                if(r >= 10){
+                    int sortedTrack = rand()%3;
+                    switch(sortedTrack){
+                    case 0:
+                        obstacles[i].x = -2.0f;
+                        obstacles[i].y = 1.0f;
+                        obstacles[i].z = (rand()%40 + 25);
+                        obstacles[i].model = Matrix_Identity()*Matrix_Translate(-2.0f, 1.0f, obstacles[i].z);
+                        obstacles[i].visible = true;
+                        break;
+                    case 1:
+                        obstacles[i].x = 0.0f;
+                        obstacles[i].y = 1.0f;
+                        obstacles[i].z = (rand()%40 + 25);
+                        obstacles[i].model = Matrix_Identity()*Matrix_Translate(0.0f, 1.0f, obstacles[i].z);
+                        obstacles[i].visible = true;
+                        break;
+                    case 2:
+                    default:
+                        obstacles[i].x = 2.0f;
+                        obstacles[i].y = 1.0f;
+                        obstacles[i].z = (rand()%40 + 25);
+                        obstacles[i].model = Matrix_Identity()*Matrix_Translate(2.0f, 1.0f, obstacles[i].z);
+                        obstacles[i].visible = true;
+                    }
+                }
+            }
+            if(obstacles[i].z < -8){
+                obstacles[i].visible = false;
+            } else {
+                glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(obstacles[i].model));
+                DrawCube(render_as_black_uniform);
+            }
+        }
+        /*int obstacleSpeed = started ? 170 : 0;///criar uma estrutura para cada obstaculo
         obstacleDelta = obstacleDelta + obstacleSpeed*timeDelta; ///criar uma estrutura para cada obstaclo
         glm::mat4 model = Matrix_Identity();
         model = model * Matrix_Translate(0.0f, 1.01f, 3.0f - obstacleDelta);
@@ -484,7 +542,8 @@ int main(int argc, char* argv[])
         model = model * Matrix_Translate(0.0f, 1.01f, -2.0f - obstacleDelta);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawCube(render_as_black_uniform);
-
+        */
+        glm::mat4 model = Matrix_Identity();
         model = Matrix_Identity();
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawPlane(render_as_black_uniform);
@@ -506,6 +565,7 @@ int main(int argc, char* argv[])
         #define BUNNY  1
         #define PLANE  2
         #define BLOCKADE 3
+        #define BUS 4
 
         // Desenhamos o modelo da esfera
         model = Matrix_Translate(-1.0f,0.0f,0.0f)
@@ -538,6 +598,11 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, BLOCKADE);
         DrawVirtualObject("blockade");
+
+        model = Matrix_Translate(1.0f,2.0f,15.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, BUS);
+        DrawVirtualObject("bus");
 
         /*model = Matrix_Identity();
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
