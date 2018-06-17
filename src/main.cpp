@@ -488,11 +488,12 @@ int main(int argc, char* argv[])
 
         for(int i = 0; i < 10; i++){
             if(obstacles[i].visible == true){
-                obstacles[i].model = obstacles[i].model*Matrix_Translate(0.0f, 0.0f, -1*(started ? 35 : 0)*timeDelta);
-                obstacles[i].z = obstacles[i].z -1*(started ? 35 : 0)*timeDelta;
+                obstacles[i].model = obstacles[i].model*Matrix_Translate(0.0f, 0.02f, -1*(started ? 30 : 0)*timeDelta);
+                obstacles[i].z = obstacles[i].z -1*(started ? 30 : 0)*timeDelta;
+                obstacles[i].y = 0.02;
             } else {
                 int r = rand()%100;
-                if(r >= 10){
+                if(r >= 75){
                     int sortedTrack = rand()%3;
                     switch(sortedTrack){
                     case 0:
@@ -519,7 +520,7 @@ int main(int argc, char* argv[])
                     }
                 }
             }
-            if(obstacles[i].z < -8){
+            if(obstacles[i].z < -15){
                 obstacles[i].visible = false;
             } else {
                 glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(obstacles[i].model));
@@ -1321,21 +1322,21 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
 
 
 void liftLeftLeg(){
-    g_RightLegAngleX = g_RightLegAngleX + 0.2*timeDelta;
+    g_RightLegAngleX = g_RightLegAngleX + 0.5*timeDelta;
     g_RightLowerLegAngleX = g_RightLowerLegAngleX + 1*timeDelta;
     g_LeftLegAngleX = g_LeftLegAngleX - 2.2*timeDelta;
     g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + 2*timeDelta;
 }
 void liftRightLeg(){
-    g_RightLegAngleX = g_RightLegAngleX - 2.2*timeDelta;
+    g_RightLegAngleX = g_RightLegAngleX - 2.5*timeDelta;
     g_RightLowerLegAngleX = g_RightLowerLegAngleX + 2*timeDelta;
     g_LeftLegAngleX = g_LeftLegAngleX + 2.5*timeDelta;
     g_LeftLowerLegAngleX = g_LeftLowerLegAngleX + 1*timeDelta;
 }
 
 void fall(){
-    g_TorsoPositionY = g_TorsoPositionY - 2*timeDelta;
-    camera_position_c.y = camera_position_c.y - 2*timeDelta;
+    g_TorsoPositionY = g_TorsoPositionY - 3*timeDelta;
+    camera_position_c.y = camera_position_c.y - 3*timeDelta;
 
     g_LeftForearmAngleZ = g_LeftForearmAngleZ - 1.7*timeDelta;
     g_LeftForearmAngleX = g_LeftForearmAngleX + 5*timeDelta;
@@ -1453,8 +1454,8 @@ void jump(){
         printf("%f\n",RightLowerLegAngleZDelta);*/
     }
 
-    g_TorsoPositionY = g_TorsoPositionY + 2*timeDelta;
-    camera_position_c.y = camera_position_c.y + 2*timeDelta;
+    g_TorsoPositionY = g_TorsoPositionY + 3*timeDelta;
+    camera_position_c.y = camera_position_c.y + 3*timeDelta;
 
     g_LeftForearmAngleZ = g_LeftForearmAngleZ + LeftForearmAngleZDelta*timeDelta;
     g_LeftForearmAngleX = g_LeftForearmAngleX + LeftForearmAngleXDelta*timeDelta;
@@ -2106,6 +2107,9 @@ bool PlayerFloorColision(float floorY, float playerLowerY){
     }
     return false;
 }
+
+///TODO
+///bool PlayerObstacleColision(float px, float py, float pz, float p)
 
 // Variáveis globais que armazenam a última posição do cursor do mouse, para
 // que possamos calcular quanto que o mouse se movimentou entre dois instantes
