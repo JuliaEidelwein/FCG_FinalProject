@@ -179,7 +179,7 @@ float default_camera_yaw = PI / 2;
 float camera_yaw = default_camera_yaw;
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
-glm::vec4 camera_position_c  = glm::vec4(0.1f, 1.9f, -6.4f, 1.0f); // Ponto "c", centro da câmera
+glm::vec4 camera_position_c  = glm::vec4(-0.05f, 2.0f, -6.3f, 1.0f); // Ponto "c", centro da câmera
 glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up"
 
 glm::vec4 camera_view_vector = glm::vec4(cos(camera_yaw) * cos(camera_pitch) , sin(camera_pitch), sin(camera_yaw) * cos(camera_pitch), 0.0f);
@@ -702,16 +702,16 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
         } else {
             switch(track){
             case 0:
-                camera_position_c.x = 2.1f;
+                camera_position_c.x = 1.95f;
                 g_TorsoPositionX = 2.0f;
                 break;
             case 1:
-                camera_position_c.x = 0.1f;
+                camera_position_c.x = -0.05f;
                 g_TorsoPositionX = 0.0f;
                 break;
             case 2:
             default:
-                camera_position_c.x = -1.9f;
+                camera_position_c.x = -2.05f;
                 g_TorsoPositionX = -2.0f;
             }
         }
