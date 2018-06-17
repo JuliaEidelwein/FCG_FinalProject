@@ -347,6 +347,8 @@ int main(int argc, char* argv[])
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
     LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
+    LoadTextureImage("../../data/asphalt.png"); // TextureImage2
+    //LoadTextureImage("../../data/asphalt.png"); // TextureImage2
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -360,6 +362,14 @@ int main(int argc, char* argv[])
     ObjModel planemodel("../../data/plane.obj");
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
+
+    ObjModel blockade("../../data/roadBlockade.obj");
+    ComputeNormals(&blockade);
+    BuildTrianglesAndAddToVirtualScene(&blockade);
+
+    /*ObjModel floormodel("../../data/floor.obj");
+    ComputeNormals(&floormodel);
+    BuildTrianglesAndAddToVirtualScene(&floormodel);*/
 
     if ( argc > 1 )
     {
@@ -424,7 +434,6 @@ int main(int argc, char* argv[])
     double currentTime;
     //double timeDelta;
     int obstacleDelta = 0;
-
 
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -496,6 +505,7 @@ int main(int argc, char* argv[])
         #define SPHERE 0
         #define BUNNY  1
         #define PLANE  2
+        #define BLOCKADE 3
 
         // Desenhamos o modelo da esfera
         model = Matrix_Translate(-1.0f,0.0f,0.0f)
@@ -514,10 +524,25 @@ int main(int argc, char* argv[])
         DrawVirtualObject("bunny");
 
         // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
+        //model = Matrix_Translate(0.0f,-1.1f,0.0f);
+        /*model = Matrix_Identity();
+        model = Matrix_Translate(-2.5f, 0.0f, 0.0f)
+                *Matrix_Scale(2.0f, 1.0f, 36.0f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, PLANE);
-        DrawVirtualObject("plane");
+        DrawVirtualObject("plane");*/
+
+        model = Matrix_Identity();
+        model = Matrix_Translate(1.0f, 5.0f, 0.0f)*
+               Matrix_Scale(4.0f, 4.0f, 3.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, BLOCKADE);
+        DrawVirtualObject("blockade");
+
+        /*model = Matrix_Identity();
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, FLOOR);
+        DrawVirtualObject("floor");*/
 
         // Pedimos para OpenGL desenhar linhas com largura de 10 pixels.
         glLineWidth(10.0f);
@@ -1198,7 +1223,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         glBindBuffer(GL_ARRAY_BUFFER, VBO_normal_coefficients_id);
         glBufferData(GL_ARRAY_BUFFER, normal_coefficients.size() * sizeof(float), NULL, GL_STATIC_DRAW);
         glBufferSubData(GL_ARRAY_BUFFER, 0, normal_coefficients.size() * sizeof(float), normal_coefficients.data());
-        location = 1; // "(location = 1)" em "shader_vertex.glsl"
+        location = 3; // "(location = 1)" em "shader_vertex.glsl"
         number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
         glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(location);

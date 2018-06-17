@@ -3,15 +3,15 @@
 // Atributos de vértice recebidos como entrada ("in") pelo Vertex Shader.
 // Veja a função BuildTriangle() em "main.cpp".
 layout (location = 0) in vec4 model_coefficients;
-layout (location = 1) in vec4 normal_coefficients;
+layout (location = 1) in vec4 color_coefficients;
 layout (location = 2) in vec2 texture_coefficients;
-layout (location = 3) in vec4 color_coefficients;
+layout (location = 3) in vec4 normal_coefficients;
 
 // Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
 // ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
 // para cada fragmento, os quais serão recebidos como entrada pelo Fragment
 // Shader. Veja o arquivo "shader_fragment.glsl".
-out vec4 color;
+out vec4 interpColor;
 
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
@@ -71,7 +71,7 @@ void main()
     {
         // Ignoramos o atributo cor dos vértices, colocando a cor final como
         // preta. Utilizamos isto para renderizar as arestas pretas dos cubos.
-        color = vec4(0.0f,0.0f,0.0f,1.0f);
+        interpColor = vec4(0.0f,0.0f,0.0f,1.0f);
     }
     else
     {
@@ -79,6 +79,6 @@ void main()
         // "cor_interpolada_pelo_rasterizador". Esta variável será interpolada pelo
         // rasterizador, gerando valores interpolados para cada fragmento!  Veja o
         // arquivo "shader_fragment.glsl".
-        color = color_coefficients;
+        interpColor = color_coefficients;
     }
 }

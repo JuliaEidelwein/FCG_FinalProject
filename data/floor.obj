@@ -1,8 +1,8 @@
-g plane
+g floor
 
-v -1 0 1
 v 4 0 60
 v 4 0 -12
+v -4 0 60
 v -4 0 -12
 
 vt 0 0

@@ -13,6 +13,10 @@ in vec4 position_model;
 // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
 in vec2 texcoords;
 
+in vec4 interpColor;
+
+vec3 newInterpColor = vec3(interpColor);
+
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
 uniform mat4 view;
@@ -22,6 +26,7 @@ uniform mat4 projection;
 #define SPHERE 0
 #define BUNNY  1
 #define PLANE  2
+#define BLOCKADE 3
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -121,15 +126,44 @@ void main()
         U = texcoords.x;
         V = texcoords.y;
     }
+    /*else if ( object_id == FLOOR )
+    {
+        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
+        U = texcoords.x;
+        V = texcoords.y;
+    }*/
 
+    /*if ( object_id == FLOOR ){
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+        vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
+
+        // Equação de Iluminação
+        float lambert = max(0,dot(n,l));
+        color = Kd0 * (lambert + 0.01);
+    } else {*/
     // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
     vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
     vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
+    vec3 Kd2 = texture(TextureImage2, vec2(U,V)).rgb;
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
 
-    color = Kd0 * (lambert + 0.01);
+    if(object_id == PLANE){
+        color = vec3(0.1,0.2,0.2);
+    } else {
+        color = newInterpColor;
+    }
+
+    if(object_id == BUNNY || object_id == SPHERE){
+        if(Kd0 == Kd1){ ///testa se carregou somente a primeira imagem
+            color = Kd2 * (lambert + 0.5);
+        } else {
+            color = Kd2 * (lambert - 0.5);
+        }
+    }
+
+    //}
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
