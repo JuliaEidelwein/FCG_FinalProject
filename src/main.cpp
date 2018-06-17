@@ -77,10 +77,13 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 bool PlayerFloorColision(float floorY, float playerLowerY);
+bool PlayerObstacleColision(glm::mat4 &m, glm::vec3 minBbox, glm::vec3 maxBbox);
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniforms, GLuint program_id);
 void AddRandomObstacles();
 void MoveObstacles();
 bool IsBehind(const glm::mat4& m);
+
+glm::mat4 chestModel;
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -628,20 +631,25 @@ void AddRandomObstacles() {
 }
 
 bool IsBehind(const glm::mat4& m) {
+    printf("IS BEHIND x: %f | y: %f | z: %f\n",m[3][0], m[3][1], m[3][2]);
     return m[3][2] < -20;
 }
 
 void MoveObstacles() {
-    std::list<glm::mat4>::iterator it;
-    for (it = cows.begin(); it != cows.end(); ++it) {
-        (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
-    }
-    for (it = blockades.begin(); it != blockades.end(); ++it) {
-        (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
-    }
+    if(started){
+        std::list<glm::mat4>::iterator it;
+        for (it = cows.begin(); it != cows.end(); ++it) {
+            (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
+            //PlayerObstacleColision(*it, g_VirtualScene2["cow"].bbox_min, g_VirtualScene2["cow"].bbox_max);
+        }
+        for (it = blockades.begin(); it != blockades.end(); ++it) {
+            (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
+            PlayerObstacleColision(*it, g_VirtualScene2["blockade"].bbox_min, g_VirtualScene2["blockade"].bbox_max);
+        }
 
-    cows.remove_if(IsBehind);
-    blockades.remove_if(IsBehind);
+        cows.remove_if(IsBehind);
+        blockades.remove_if(IsBehind);
+    }
 }
 
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniform, GLuint program_id) {
@@ -654,6 +662,7 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
     // Translação inicial do torso
     //model = model * Matrix_Translate(g_TorsoPositionX - 1.0f, g_TorsoPositionY + 1.0f, 0.0f);
     model = model * Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY + 1.83, -6.5f);
+    //chestModel = chestModel*Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY + 1.83, -6.5f);
     //if(jumpStep > 0){
     switch(movement){
     case -1: //Falling
@@ -665,6 +674,7 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
             if(started){
                 movement = 2;
                 //clearAngles();
+                chestModel[1][3] = 1.83;
                 legUp = 'n';
             }
         }
@@ -751,15 +761,18 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
             case 0:
                 camera_position_c.x = 1.95f;
                 g_TorsoPositionX = 2.0f;
+                chestModel[0][3] = 2.0f;
                 break;
             case 1:
                 camera_position_c.x = -0.05f;
                 g_TorsoPositionX = 0.0f;
+                chestModel[0][3] = 0.0f;
                 break;
             case 2:
             default:
                 camera_position_c.x = -2.05f;
                 g_TorsoPositionX = -2.0f;
+                chestModel[0][3] = -2.0f;
             }
         }
     }
@@ -770,6 +783,10 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
     PushMatrix(model);
         // Atualizamos a matriz model (multiplicação à direita) para fazer um escalamento do torso
         model = model * Matrix_Scale(0.4f, 0.6f, 0.2f);
+        chestModel[0][0] = 0.4f;
+        chestModel[1][1] = 0.6f;
+        chestModel[2][2] = 0.2f;
+        chestModel[2][3] = -6.5f;
         // Enviamos a matriz "model" para a placa de vídeo (GPU). Veja o
         // arquivo "shader_vertex.glsl", onde esta é efetivamente
         // aplicada em todos os pontos.
@@ -921,6 +938,11 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
             PopMatrix(model);
         PopMatrix(model);
     PopMatrix(model);
+
+    //model = Matrix_Identity();
+    //model = model * Matrix_Translate(0.0f, 1.83f, -6.0f);
+    //glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+    //DrawCube(render_as_black_uniform);
 }
 
 void BuildCamera(GLint view_uniform, GLint projection_uniform) {
@@ -1294,6 +1316,7 @@ void liftRightLeg(){
 void fall(){
     g_TorsoPositionY = g_TorsoPositionY - 3*timeDelta;
     camera_position_c.y = camera_position_c.y - 3*timeDelta;
+    chestModel[1][3] = chestModel[1][3] -3*timeDelta;
 
     g_LeftForearmAngleZ = g_LeftForearmAngleZ - 1.7*timeDelta;
     g_LeftForearmAngleX = g_LeftForearmAngleX + 5*timeDelta;
@@ -1413,6 +1436,7 @@ void jump(){
 
     g_TorsoPositionY = g_TorsoPositionY + 3*timeDelta;
     camera_position_c.y = camera_position_c.y + 3*timeDelta;
+    chestModel[1][3] = chestModel[1][3] + 3*timeDelta;
 
     g_LeftForearmAngleZ = g_LeftForearmAngleZ + LeftForearmAngleZDelta*timeDelta;
     g_LeftForearmAngleX = g_LeftForearmAngleX + LeftForearmAngleXDelta*timeDelta;
@@ -1728,7 +1752,7 @@ GLuint BuildTriangles()
     // alterar o mesmo. Isso evita bugs.
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    // Agora repetimos todos os passos acima para atribuir um novo atributo a
+    // Agora repetimos fs os passos acima para atribuir um novo atributo a
     // cada vértice: uma cor (veja slide 113 do documento "Aula_04_Modelagem_Geometrica_3D.pdf").
     // Tal cor é definida como coeficientes RGBA: Red, Green, Blue, Alpha;
     // isto é: Vermelho, Verde, Azul, Alpha (valor de transparência).
@@ -2065,8 +2089,32 @@ bool PlayerFloorColision(float floorY, float playerLowerY){
     return false;
 }
 
-///TODO
-///bool PlayerObstacleColision(float px, float py, float pz, float p)
+bool PlayerObstacleColision(glm::mat4 &m, glm::vec3 minBbox, glm::vec3 maxBbox){
+    //printf("x: %f | y: %f | z: %f\n",chestModel[0][3], chestModel[1][3], chestModel[2][3]);
+    //printf("w: %f | h: %f | d: %f\n",chestModel[0][0], chestModel[1][1], chestModel[2][2]);
+    printf("\nx: %f | y: %f | z: %f\n",chestModel[0][3], chestModel[1][3], chestModel[2][3]);
+    printf("w: %f | h: %f | d: %f\n",chestModel[0][0], chestModel[1][1], chestModel[2][2]);
+    printf("Obstacle:\n");
+    printf("x: %f | y: %f | z: %f\n",m[3][0], m[3][1], m[3][2]);
+    printf("x: %f | y: %f | z: %f\n",minBbox.x, minBbox.y, minBbox.z);
+    printf("x: %f | y: %f | z: %f\n",maxBbox.x, maxBbox.y, maxBbox.z);
+    printf("w: %f | h: %f | d: %f\n",abs(abs(minBbox.x) - abs(maxBbox.x)), abs(abs(minBbox.y) - abs(maxBbox.y)),abs(abs(minBbox.z) - abs(maxBbox.z)));
+    if(abs(chestModel[0][3] - minBbox.x) < (chestModel[0][0] + abs(abs(minBbox.x) - abs(maxBbox.x)))){
+        if(abs(chestModel[1][3] - minBbox.y) < (chestModel[1][1] + abs(abs(minBbox.y) - abs(maxBbox.y)))){
+            if(abs(chestModel[2][3] - minBbox.z) < (chestModel[2][2] + abs(abs(minBbox.z) - abs(maxBbox.z)))){
+                printf("x: %f | y: %f | z: %f\n",chestModel[0][3], chestModel[1][3], chestModel[2][3]);
+                printf("w: %f | h: %f | d: %f\n",chestModel[0][0], chestModel[1][1], chestModel[2][2]);
+                printf("Obstacle:\n");
+                printf("x: %f | y: %f | z: %f\n",minBbox.x, minBbox.y, minBbox.z);
+                printf("x: %f | y: %f | z: %f\n",maxBbox.x, maxBbox.y, maxBbox.z);
+                printf("w: %f | h: %f | d: %f\n",abs(abs(minBbox.x) - abs(maxBbox.x)), abs(abs(minBbox.y) - abs(maxBbox.y)),abs(abs(minBbox.z) - abs(maxBbox.z)));
+                printf("morreu!\n\n");
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 // Variáveis globais que armazenam a última posição do cursor do mouse, para
 // que possamos calcular quanto que o mouse se movimentou entre dois instantes
