@@ -80,6 +80,7 @@ bool PlayerFloorColision(float floorY, float playerLowerY);
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniforms, GLuint program_id);
 void AddRandomObstacles();
 void MoveObstacles();
+bool IsBehind(const glm::mat4& m);
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -676,17 +677,20 @@ void AddRandomObstacles() {
     if(x <= 0.001) {
 
         float l = (float)rand()/(float)(RAND_MAX/3);
-        if(l <= 0) {
-            l = -1;
-        } else if(l <= 1) {
+        if(l <= 1) {
+            l = -2.5;
+        } else if(l <= 2) {
             l = 0;
         } else {
-            l = 1;
+            l = 2.5;
         }
 
-        cows.push_back(Matrix_Scale(0.6f, 0.6f, 0.6f) * Matrix_Translate(l, 0.65f, 20.0f));
-
+        cows.push_back(Matrix_Scale(0.8f, 0.8f, 0.8f) * Matrix_Translate(l, 0.65f, 20.0f));
     }
+}
+
+bool IsBehind(const glm::mat4& m) {
+    return m[3][2] < -20;
 }
 
 void MoveObstacles() {
@@ -694,6 +698,8 @@ void MoveObstacles() {
     for (it = cows.begin(); it != cows.end(); ++it) {
         (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -0.01f);
     }
+
+    cows.remove_if(IsBehind);
 }
 
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniform, GLuint program_id) {
