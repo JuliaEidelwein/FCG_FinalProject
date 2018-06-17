@@ -76,20 +76,9 @@ void main()
     float U = 0.0;
     float V = 0.0;
 
-    if ( object_id == SPHERE )
-    {
-        // PREENCHA AQUI as coordenadas de textura da esfera, computadas com
-        // projeção esférica EM COORDENADAS DO MODELO. Utilize como referência
-        // o slide 139 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf".
-        // A esfera que define a projeção deve estar centrada na posição
-        // "bbox_center" definida abaixo.
+    color = newInterpColor;
 
-        // Você deve utilizar:
-        //   função 'length( )' : comprimento Euclidiano de um vetor
-        //   função 'atan( , )' : arcotangente. Veja https://en.wikipedia.org/wiki/Atan2.
-        //   função 'asin( )'   : seno inverso.
-        //   constante M_PI
-        //   variável position_model
+    if ( object_id == SPHERE )
 
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
 
@@ -100,16 +89,10 @@ void main()
 
         V = ((M_PI/2) + V)/M_PI;
         U = (M_PI + U)/(2*M_PI);
+
     }
-    else if ( object_id == BUNNY || object_id == BUS)
+    else if ( object_id == BUNNY || object_id == BUS || object_id == BLOCKADE)
     {
-        // PREENCHA AQUI as coordenadas de textura do coelho, computadas com
-        // projeção planar XY em COORDENADAS DO MODELO. Utilize como referência
-        // o slide 106 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf",
-        // e também use as variáveis min*/max* definidas abaixo para normalizar
-        // as coordenadas de textura U e V dentro do intervalo [0,1]. Para
-        // tanto, veja por exemplo o mapeamento da variável 'p_v' utilizando
-        // 'h' no slide 151 do documento "Aula_20_e_21_Mapeamento_de_Texturas.pdf".
 
         float minx = bbox_min.x;
         float maxx = bbox_max.x;
@@ -129,22 +112,8 @@ void main()
         U = texcoords.x;
         V = texcoords.y;
     }
-    /*else if ( object_id == FLOOR )
-    {
-        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
-        U = texcoords.x;
-        V = texcoords.y;
-    }*/
 
-    /*if ( object_id == FLOOR ){
-        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-        vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
-
-        // Equação de Iluminação
-        float lambert = max(0,dot(n,l));
-        color = Kd0 * (lambert + 0.01);
-    } else {*/
-    // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+    // Obtemos a refletância difusa a partir da leitura da imagem TextureImage
     vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
     vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
     vec3 Kd2 = texture(TextureImage2, vec2(U,V)).rgb;
@@ -160,8 +129,6 @@ void main()
         color = Kd0 * (lambert + 0.5);
     } else if (object_id == COW) {
         //color = vec3(0.8f, 0.0f, 0.0f) * (lambert + 0.5);
-        color = newInterpColor;
-    } else {
         color = newInterpColor;
     }
 
