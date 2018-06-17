@@ -203,6 +203,7 @@ bool free_cam_enabled = true;
 */
 
 std::list<glm::mat4> cows;
+std::list<glm::mat4> blockades;
 
 /**
     MOVIMENTACAO
@@ -397,10 +398,6 @@ int main(int argc, char* argv[])
     ComputeNormals(&cowmodel);
     BuildTrianglesAndAddToVirtualScene(&cowmodel);
 
-    /*ObjModel floormodel("../../data/floor.obj");
-    ComputeNormals(&floormodel);
-    BuildTrianglesAndAddToVirtualScene(&floormodel);*/
-
     if ( argc > 1 )
     {
         ObjModel model(argv[1]);
@@ -469,14 +466,10 @@ int main(int argc, char* argv[])
 
         glm::mat4 model = Matrix_Identity();
         model = Matrix_Identity();
+        glUniform1i(object_id_uniform, -1);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawPlane(render_as_black_uniform);
 
-        // Neste ponto a matriz model recuperada é a matriz inicial (translação do torso)
-
-        // Agora queremos desenhar os eixos XYZ de coordenadas GLOBAIS.
-        // Para tanto, colocamos a matriz de modelagem igual à identidade.
-        // Veja slide 147 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
         model = Matrix_Identity();
 
         // Enviamos a nova matriz "model" para a placa de vídeo (GPU). Veja o
@@ -534,6 +527,12 @@ int main(int argc, char* argv[])
             glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(*it));
             glUniform1i(object_id_uniform, COW);
             DrawVirtualObject("cow");
+        }
+
+        for (it = blockades.begin(); it != blockades.end(); ++it) {
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(*it));
+            glUniform1i(object_id_uniform, BLOCKADE);
+            DrawVirtualObject("RoadBlockade_01");
         }
 
         /*model = Matrix_Identity();
@@ -621,7 +620,10 @@ void AddRandomObstacles() {
             l = 2.5;
         }
 
-        cows.push_back(Matrix_Scale(0.8f, 0.8f, 0.8f) * Matrix_Translate(l, 0.65f, 20.0f));
+        if(rand()/(float)RAND_MAX < 0.3)
+            cows.push_back(Matrix_Scale(0.8f, 0.8f, 0.8f) * Matrix_Translate(l, 0.65f, 20.0f));
+        else
+            blockades.push_back(Matrix_Scale(0.4f, 1.2f, 0.8f) * Matrix_Translate(l * 2.0f, 0.0f, 20.0f));
     }
 }
 
@@ -634,27 +636,17 @@ void MoveObstacles() {
     for (it = cows.begin(); it != cows.end(); ++it) {
         (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
     }
+    for (it = blockades.begin(); it != blockades.end(); ++it) {
+        (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
+    }
 
     cows.remove_if(IsBehind);
+    blockades.remove_if(IsBehind);
 }
 
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniform, GLuint program_id) {
-    // Buscamos o endereço das variáveis definidas dentro do Vertex Shader.
-    // Utilizaremos estas variáveis para enviar dados para a placa de vídeo
-    // (GPU)! Veja arquivo "shader_vertex.glsl".
-
-    // Cada cópia do cubo possui uma matriz de modelagem independente,
-    // já que cada cópia estará em uma posição (rotação, escala, ...)
-    // diferente em relação ao espaço global (World Coordinates). Veja
-    // slide 138 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
-    //
-    // Entretanto, neste laboratório as matrizes de modelagem dos cubos
-    // serão construídas de maneira hierárquica, tal que operações em
-    // alguns objetos influenciem outros objetos. Por exemplo: ao
-    // transladar o torso, a cabeça deve se movimentar junto.
-    // Veja slide 202 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
-    //
     glm::mat4 model = Matrix_Identity(); // Transformação inicial = identidade.
+    glUniform1i(object_id_uniform, -1);
 
     //double currentTime = glfwGetTime();
     //double timeDelta = currentTime - prevTime;
