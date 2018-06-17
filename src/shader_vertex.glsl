@@ -3,18 +3,25 @@
 // Atributos de vértice recebidos como entrada ("in") pelo Vertex Shader.
 // Veja a função BuildTriangle() em "main.cpp".
 layout (location = 0) in vec4 model_coefficients;
-layout (location = 1) in vec4 color_coefficients;
+layout (location = 1) in vec4 normal_coefficients;
+layout (location = 2) in vec2 texture_coefficients;
+layout (location = 3) in vec4 color_coefficients;
 
 // Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
 // ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
 // para cada fragmento, os quais serão recebidos como entrada pelo Fragment
 // Shader. Veja o arquivo "shader_fragment.glsl".
-out vec4 cor_interpolada_pelo_rasterizador;
+out vec4 color;
 
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+
+out vec4 position_world;
+out vec4 position_model;
+out vec4 normal;
+out vec2 texcoords;
 
 // Variável booleana no código C++ também enviada para a GPU
 uniform bool render_as_black;
@@ -46,11 +53,25 @@ void main()
     //     gl_Position.w = model_coefficients.w;
     //
 
+        // Posição do vértice atual no sistema de coordenadas global (World).
+    position_world = model * model_coefficients;
+
+    // Posição do vértice atual no sistema de coordenadas local do modelo.
+    position_model = model_coefficients;
+
+    // Normal do vértice atual no sistema de coordenadas global (World).
+    // Veja slide 94 do documento "Aula_07_Transformacoes_Geometricas_3D.pdf".
+    normal = inverse(transpose(model)) * normal_coefficients;
+    normal.w = 0.0;
+
+    // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
+    texcoords = texture_coefficients;
+
     if ( render_as_black )
     {
         // Ignoramos o atributo cor dos vértices, colocando a cor final como
         // preta. Utilizamos isto para renderizar as arestas pretas dos cubos.
-        cor_interpolada_pelo_rasterizador = vec4(0.0f,0.0f,0.0f,1.0f);
+        color = vec4(0.0f,0.0f,0.0f,1.0f);
     }
     else
     {
@@ -58,6 +79,6 @@ void main()
         // "cor_interpolada_pelo_rasterizador". Esta variável será interpolada pelo
         // rasterizador, gerando valores interpolados para cada fragmento!  Veja o
         // arquivo "shader_fragment.glsl".
-        cor_interpolada_pelo_rasterizador = color_coefficients;
+        color = color_coefficients;
     }
 }
