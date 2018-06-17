@@ -518,13 +518,13 @@ int main(int argc, char* argv[])
         DrawVirtualObject("plane");*/
 
         model = Matrix_Identity();
-        model = Matrix_Translate(1.0f, 5.0f, 0.0f)*
-               Matrix_Scale(4.0f, 4.0f, 3.0f);
+        model = Matrix_Translate(1.0f, 10.0f, 0.0f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, BLOCKADE);
         DrawVirtualObject("blockade");
 
-        model = Matrix_Translate(1.0f,2.0f,15.0f);
+        model = Matrix_Translate(2.0f,0.0f,10.0f)*
+                Matrix_Scale(0.25f, 0.3f, 0.3f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, BUS);
         DrawVirtualObject("bus");

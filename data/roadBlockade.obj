@@ -1,5 +1,6 @@
 # Blender v2.76 (sub 0) OBJ File: 'RoadBlockade_01.blend'
 # www.blender.org
+g blockade
 mtllib RoadBlockade_01.mtl
 o RoadBlockade_01
 v -1.404167 0.321445 0.083552
