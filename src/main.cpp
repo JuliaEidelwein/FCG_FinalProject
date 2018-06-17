@@ -14,6 +14,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
+#include <list>
 
 // Headers das bibliotecas OpenGL
 #include <glad/glad.h>   // Criação de contexto OpenGL 3.3
@@ -77,6 +78,8 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 bool PlayerFloorColision(float floorY, float playerLowerY);
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniforms, GLuint program_id);
+void AddRandomObstacles();
+void MoveObstacles();
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -193,6 +196,12 @@ glm::vec4 w = -camera_view_vector;
 glm::vec4 u = crossproduct(camera_up_vector, w);
 
 bool free_cam_enabled = true;
+
+/**
+    OBSTACLES
+*/
+
+std::list<glm::mat4> cows;
 
 /**
     MOVIMENTACAO
@@ -389,6 +398,10 @@ int main(int argc, char* argv[])
     ComputeNormals(&busmodel);
     BuildTrianglesAndAddToVirtualScene(&busmodel);
 
+    ObjModel cowmodel("../../data/cow.obj");
+    ComputeNormals(&cowmodel);
+    BuildTrianglesAndAddToVirtualScene(&cowmodel);
+
     /*ObjModel floormodel("../../data/floor.obj");
     ComputeNormals(&floormodel);
     BuildTrianglesAndAddToVirtualScene(&floormodel);*/
@@ -456,6 +469,8 @@ int main(int argc, char* argv[])
         BuildCamera(view_uniform, projection_uniform);
 
         BuildCharacter(currentTime, model_uniform, render_as_black_uniform, program_id);
+
+        AddRandomObstacles();
 
         for(int i = 0; i < 10; i++){
             if(obstacles[i].visible == true){
@@ -538,6 +553,7 @@ int main(int argc, char* argv[])
         #define PLANE  2
         #define BLOCKADE 3
         #define BUS 4
+        #define COW 5
 
         // Desenhamos o modelo da esfera
         model = Matrix_Translate(-1.0f,0.0f,0.0f)
@@ -576,13 +592,20 @@ int main(int argc, char* argv[])
         glUniform1i(object_id_uniform, BUS);
         DrawVirtualObject("bus");
 
+        std::list<glm::mat4>::iterator it;
+        for (it = cows.begin(); it != cows.end(); ++it) {
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(*it));
+            glUniform1i(object_id_uniform, COW);
+            DrawVirtualObject("cow");
+        }
+
         /*model = Matrix_Identity();
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, FLOOR);
         DrawVirtualObject("floor");*/
 
         // Pedimos para OpenGL desenhar linhas com largura de 10 pixels.
-        glLineWidth(10.0f);
+        glLineWidth(2.0f);
 
         // Informamos para a placa de vídeo (GPU) que a variável booleana
         // "render_as_black" deve ser colocada como "false". Veja o arquivo
@@ -636,6 +659,8 @@ int main(int argc, char* argv[])
         // definidas anteriormente usando glfwSet*Callback() serão chamadas
         // pela biblioteca GLFW.
         glfwPollEvents();
+
+        MoveObstacles();
     }
 
     // Finalizamos o uso dos recursos do sistema operacional
@@ -643,6 +668,32 @@ int main(int argc, char* argv[])
 
     // Fim do programa
     return 0;
+}
+
+void AddRandomObstacles() {
+    float x = (float)rand()/(float)RAND_MAX;
+
+    if(x <= 0.001) {
+
+        float l = (float)rand()/(float)(RAND_MAX/3);
+        if(l <= 0) {
+            l = -1;
+        } else if(l <= 1) {
+            l = 0;
+        } else {
+            l = 1;
+        }
+
+        cows.push_back(Matrix_Scale(0.6f, 0.6f, 0.6f) * Matrix_Translate(l, 0.65f, 20.0f));
+
+    }
+}
+
+void MoveObstacles() {
+    std::list<glm::mat4>::iterator it;
+    for (it = cows.begin(); it != cows.end(); ++it) {
+        (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -0.01f);
+    }
 }
 
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniform, GLuint program_id) {

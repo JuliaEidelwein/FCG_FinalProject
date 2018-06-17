@@ -28,6 +28,7 @@ uniform mat4 projection;
 #define PLANE  2
 #define BLOCKADE 3
 #define BUS 4
+#define COW 5
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -152,14 +153,15 @@ void main()
 
     if(object_id == PLANE){
         color = vec3(0.1,0.2,0.2);
-    } else {
-        color = newInterpColor;
-    }
-
-    if(object_id == BUNNY){
+    } else if(object_id == BUNNY){
         color = Kd2 * (lambert + 0.5);
     } else if (object_id == SPHERE) {
         color = Kd0 * (lambert + 0.5);
+    } else if (object_id == COW) {
+        //color = vec3(0.8f, 0.0f, 0.0f) * (lambert + 0.5);
+        color = newInterpColor;
+    } else {
+        color = newInterpColor;
     }
 
     //}
