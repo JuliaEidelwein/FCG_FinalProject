@@ -4,6 +4,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <windows.h>
+#include <mmsystem.h>
+
 // Headers abaixo são específicos de C++
 #include <map>
 #include <stack>
@@ -1575,7 +1578,7 @@ void DrawCube(GLint render_as_black_uniform)
     );
 
     // Pedimos para OpenGL desenhar linhas com largura de 4 pixels.
-    glLineWidth(4.0f);
+    glLineWidth(2.0f);
 
     // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
     // apontados pelo VAO como linhas. Veja a definição de
@@ -2247,6 +2250,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             movement = 1;
             spacePressed = true;
             timeWhenSpacePressed = glfwGetTime();
+            PlaySound(TEXT("../../data/jump.wav"), NULL, SND_ASYNC);
         }
 
         //g_TorsoPositionY = g_TorsoPositionY + 0.3f;
