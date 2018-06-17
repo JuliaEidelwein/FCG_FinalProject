@@ -113,7 +113,8 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 /** VARIAVEIS DA CAMERA */
 
 float camera_pitch = 0.0f;
-float camera_yaw = PI / 2;
+float default_camera_yaw = PI / 2;
+float camera_yaw = default_camera_yaw;
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
 glm::vec4 camera_position_c  = glm::vec4(0.1f, 1.9f, -6.4f, 1.0f); // Ponto "c", centro da câmera
@@ -752,10 +753,11 @@ void BuildCamera(GLint view_uniform, GLint projection_uniform) {
     if(free_cam_enabled) {
         view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
     } else {
-        glm::vec4 new_cam_pos = camera_position_c + (camera_view_vector * g_CameraDistance) / norm(camera_view_vector);
+        glm::vec4 new_cam_pos = camera_position_c + (-camera_view_vector * g_CameraDistance) / norm(camera_view_vector);
         //new_cam_pos.z = new_cam_pos.z - 8.0f;
         //new_cam_pos.y = new_cam_pos.y + 1.5f;
-        view = Matrix_Camera_View(new_cam_pos, -camera_view_vector, camera_up_vector);
+        view = Matrix_Camera_View(new_cam_pos,
+                                  camera_view_vector, camera_up_vector);
     }
 
     glm::mat4 projection;
@@ -1645,10 +1647,6 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     float dx = xpos - g_LastCursorPosX;
     float dy = ypos - g_LastCursorPosY;
 
-    if(!free_cam_enabled) {
-        dy = - dy;
-    }
-
     // Atualizamos parâmetros da câmera com os deslocamentos
     camera_yaw   += 0.01f * dx;
     camera_pitch -= 0.01f * dy;
@@ -1656,7 +1654,8 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
     float maxPitch = 3.141592f / 2;
     float minPitch = -maxPitch;
-    float maxYaw = 3.141592f * 2;
+    float maxYaw = default_camera_yaw + 3.141592f / 3;
+    float minYaw = default_camera_yaw - 3.141592f / 3;
 
     if (camera_pitch > maxPitch)
         camera_pitch = maxPitch;
@@ -1665,10 +1664,10 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         camera_pitch = minPitch;
 
     if (camera_yaw >= maxYaw)
-        camera_yaw -= maxYaw;
+        camera_yaw = maxYaw;
 
-    if (camera_yaw < 0)
-        camera_yaw += maxYaw;
+    if (camera_yaw < minYaw)
+        camera_yaw = minYaw;
 
     // Atualizamos as variáveis globais para armazenar a posição atual do
     // cursor como sendo a última posição conhecida do cursor.
