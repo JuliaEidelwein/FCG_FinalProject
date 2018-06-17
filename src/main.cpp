@@ -587,7 +587,7 @@ void AddRandomObstacles() {
         if(rand()/(float)RAND_MAX < 0.3)
             cows.push_back(Matrix_Scale(0.8f, 0.8f, 0.8f) * Matrix_Translate(l, 0.65f, 20.0f));
         else
-            blockades.push_back(Matrix_Scale(0.4f, 0.8f, 0.8f) * Matrix_Translate(l, 0.65f, 20.0f));
+            blockades.push_back(Matrix_Scale(0.4f, 1.2f, 0.8f) * Matrix_Translate(l * 2.0f, 0.0f, 20.0f));
     }
 }
 
