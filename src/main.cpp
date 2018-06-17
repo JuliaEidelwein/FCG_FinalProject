@@ -2099,7 +2099,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     camera_pitch -= 0.01f * dy;
 
     // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-    float maxPitch = 3.141592f / 2;
+    float maxPitch = 3.141592f / 3;
     float minPitch = -maxPitch;
     float maxYaw = default_camera_yaw + 3.141592f / 3;
     float minYaw = default_camera_yaw - 3.141592f / 3;
