@@ -67,14 +67,23 @@ void main()
     vec4 n = normalize(normal);
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-    vec4 l = normalize(vec4(1.0,1.0,0.0,0.0));
+    vec4 l = normalize(vec4(1.0,1.0,-1.0,0.0));
 
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
 
+    // Vetor que define o sentido da reflexão especular ideal.
+    vec4 r = -l + 2 * n * dot(n, l);
+
     // Coordenadas de textura U e V
     float U = 0.0;
     float V = 0.0;
+
+    // Parâmetros que definem as propriedades espectrais da superfície
+    vec3 Kd = newInterpColor; // Refletância difusa
+    vec3 Ks = vec3(0.0f, 0.0f, 0.0f); // Refletância especular
+    vec3 Ka = Kd * 2; // Refletância ambiente
+    float q = 1; // Expoente especular para o modelo de iluminação de Phong
 
     if ( object_id == SPHERE )
     {
@@ -88,7 +97,7 @@ void main()
         V = ((M_PI/2) + V)/M_PI;
         U = (M_PI + U)/(2*M_PI);
     }
-    else if ( object_id == BUNNY || object_id == BUS || object_id == BLOCKADE)
+    else if (object_id == BLOCKADE)
     {
         float minx = bbox_min.x;
         float maxx = bbox_max.x;
@@ -101,38 +110,35 @@ void main()
 
         U = (position_model.x - minx)/(maxx - minx);
         V = (position_model.y - miny)/(maxy - miny);
+        Kd = texture(TextureImage2, vec2(U,V)).rgb;
+        Ka = Kd * 0.5;
+        Ks = vec3(0.8, 0.8, 0.8);
+        q = 20;
     }
-    else if ( object_id == PLANE )
+    else if (object_id == COW)
     {
-        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
-        U = texcoords.x;
-        V = texcoords.y;
-    }
-    // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-    vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
-    vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
-    vec3 Kd2 = texture(TextureImage2, vec2(U,V)).rgb;
-
-    // Equação de Iluminação
-    float lambert = max(0,dot(n,l));
-
-    if(object_id == PLANE){
-        color = vec3(0.1,0.2,0.2);
-    } else if(object_id == BUNNY){
-        color = Kd2 * (lambert + 0.5);
-    } else if (object_id == SPHERE) {
-        color = Kd0 * (lambert + 0.5);
-    } else if (object_id == COW) {
-        color = vec3(0.8f, 0.0f, 0.0f) * (lambert + 0.5);
-    } else if (object_id == BLOCKADE) {
-        color = Kd2 * (lambert + 0.5);
-    } else {
-        color = newInterpColor;
+        Kd = vec3(0.8, 0.0, 0.0);
+        Ks = vec3(0.8, 0.8, 0.8);
+        Ka = Kd / 2;
+        q = 80.0;
     }
 
-    //}
+    // Espectro da fonte de iluminação
+    vec3 I = vec3(1.0,1.0,1.0);
 
-    // Cor final com correção gamma, considerando monitor sRGB.
-    // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
+    // Espectro da luz ambiente
+    vec3 Ia = vec3(0.5, 0.5, 0.5);
+
+    // Termo difuso utilizando a lei dos cossenos de Lambert
+    vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, v));
+
+    // Termo ambiente
+    vec3 ambient_term = Ka * Ia;
+
+    // Termo especular utilizando o modelo de iluminação de Phong
+    vec3 phong_specular_term = Ks * I * pow(max(0, dot(r, v)), q);
+
+    color = lambert_diffuse_term + ambient_term + phong_specular_term;
+
     color = pow(color, vec3(1.0,1.0,1.0)/2.2);
 }
