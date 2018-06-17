@@ -76,10 +76,8 @@ void main()
     float U = 0.0;
     float V = 0.0;
 
-    color = newInterpColor;
-
     if ( object_id == SPHERE )
-
+    {
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
 
         vec4 plinha = bbox_center + length(bbox_max - bbox_center)*((position_model - bbox_center)/length(position_model - bbox_center));
@@ -89,11 +87,9 @@ void main()
 
         V = ((M_PI/2) + V)/M_PI;
         U = (M_PI + U)/(2*M_PI);
-
     }
     else if ( object_id == BUNNY || object_id == BUS || object_id == BLOCKADE)
     {
-
         float minx = bbox_min.x;
         float maxx = bbox_max.x;
 
@@ -112,8 +108,7 @@ void main()
         U = texcoords.x;
         V = texcoords.y;
     }
-
-    // Obtemos a refletância difusa a partir da leitura da imagem TextureImage
+    // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
     vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
     vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
     vec3 Kd2 = texture(TextureImage2, vec2(U,V)).rgb;
@@ -128,7 +123,10 @@ void main()
     } else if (object_id == SPHERE) {
         color = Kd0 * (lambert + 0.5);
     } else if (object_id == COW) {
-        //color = vec3(0.8f, 0.0f, 0.0f) * (lambert + 0.5);
+        color = vec3(0.8f, 0.0f, 0.0f) * (lambert + 0.5);
+    } else if (object_id == BLOCKADE) {
+        color = Kd2 * (lambert + 0.5);
+    } else {
         color = newInterpColor;
     }
 

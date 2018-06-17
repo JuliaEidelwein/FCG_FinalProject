@@ -466,6 +466,7 @@ int main(int argc, char* argv[])
 
         glm::mat4 model = Matrix_Identity();
         model = Matrix_Identity();
+        glUniform1i(object_id_uniform, -1);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         DrawPlane(render_as_black_uniform);
 
@@ -609,6 +610,7 @@ void MoveObstacles() {
 
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniform, GLuint program_id) {
     glm::mat4 model = Matrix_Identity(); // Transformação inicial = identidade.
+    glUniform1i(object_id_uniform, -1);
 
     //double currentTime = glfwGetTime();
     //double timeDelta = currentTime - prevTime;
