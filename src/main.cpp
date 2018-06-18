@@ -42,6 +42,8 @@
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
 
+glm::mat4 model = Matrix_Identity();
+
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
 void DrawCube(GLint render_as_black_uniform); // Desenha um cubo
@@ -215,7 +217,6 @@ std::list<glm::mat4> busses;
     MOVIMENTACAO
 */
 
-int jumpStep = 0;
 int movement = 0;
 double timeWhenSpacePressed = 0;
 double timeWhenLeftPressed = 0;
@@ -471,7 +472,7 @@ int main(int argc, char* argv[])
 
         AddRandomObstacles();
 
-        glm::mat4 model = Matrix_Identity();
+        //glm::mat4 model = Matrix_Identity();
         model = Matrix_Identity();
         glUniform1i(object_id_uniform, -1);
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
@@ -663,14 +664,9 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
     glm::mat4 model = Matrix_Identity(); // Transformação inicial = identidade.
     glUniform1i(object_id_uniform, -1);
 
-    //double currentTime = glfwGetTime();
-    //double timeDelta = currentTime - prevTime;
 
     // Translação inicial do torso
-    //model = model * Matrix_Translate(g_TorsoPositionX - 1.0f, g_TorsoPositionY + 1.0f, 0.0f);
     model = model * Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY + 1.83, -6.5f);
-    //chestModel = chestModel*Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY + 1.83, -6.5f);
-    //if(jumpStep > 0){
     if(started){
         switch(movement){
         case -1: //Falling
@@ -681,7 +677,6 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
                 clearAngles();
                 if(started){
                     movement = 2;
-                    //clearAngles();
                     chestModel[1][3] = 1.83;
                     legUp = 'n';
                 }
@@ -735,20 +730,6 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
                 break;
             }
             break;
-            /*case 3: //Move Right
-                if(currentTime - timeWhenRightPressed < 0.47){
-                    g_TorsoPositionX = g_TorsoPositionX - 2.5*timeDelta;
-                } else {
-                    movement = 2;
-                }
-                break;
-            case 4: //Move Left
-                if(currentTime - timeWhenLeftPressed < 0.47){
-                    g_TorsoPositionX = g_TorsoPositionX + 2.5*timeDelta;
-                } else {
-                    movement = 2;
-                }
-                break;*/
         case 0://Nothing
         default:
             if(currentTime - timeWhenSpacePressed > 0.47){
@@ -2107,6 +2088,16 @@ bool PlayerObstacleColision(glm::mat4 &m, float height, float width, float depth
                 busses.clear();
                 blockades.clear();
                 started = false; //Morreu
+                g_TorsoPositionX = 0.0f;
+                g_TorsoPositionY = -0.0005f;
+                model = model * Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY + 1.83, -6.5f);
+                camera_position_c.y = 2.0f;
+                timeWhenSpacePressed = 0;
+                //while(!PlayerFloorColision(0.0f, g_TorsoPositionY)){
+                //    fall();
+                //}
+                camera_position_c.x = -0.05f;
+                clearAngles();
                 return true;
             }
         }
@@ -2279,22 +2270,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.
     if ((key == GLFW_KEY_SPACE || key == GLFW_KEY_W || key == GLFW_KEY_UP) && action == GLFW_PRESS)
     {
-        //g_AngleX = 0.0f;
-        //g_AngleY = 0.0f;
-        //g_AngleZ = 0.0f;
-        //g_ForearmAngleX = 0.0f;
-        //g_ForearmAngleZ = 0.0f;
-        //g_TorsoPositionX = 0.0f;
-        //g_TorsoPositionY = 0.0f;
         if(timeWhenSpacePressed == 0 && started){
-            jumpStep = 1;
             movement = 1;
             spacePressed = true;
             timeWhenSpacePressed = glfwGetTime();
             PlaySound(TEXT("../../data/jump.wav"), NULL, SND_ASYNC);
         }
-
-        //g_TorsoPositionY = g_TorsoPositionY + 0.3f;
 
     }
 
@@ -2350,7 +2331,6 @@ void TextRendering_ShowPoints(GLFWwindow* window){
 
 void TextRendering_ShowStartMessage(GLFWwindow* window){
     if(!started){
-        float timeNow = (float)glfwGetTime();
         int numchars;
         static char buffer[20];
         numchars = snprintf(buffer, 30, "Pressione ENTER para jogar!");
