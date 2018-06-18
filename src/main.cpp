@@ -58,6 +58,7 @@ void TextRendering_Init();
 float TextRendering_LineHeight(GLFWwindow* window);
 float TextRendering_CharWidth(GLFWwindow* window);
 void TextRendering_ShowPoints(GLFWwindow* window);
+void TextRendering_ShowStartMessage(GLFWwindow* window);
 void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float x, float y, float scale = 1.0f);
 
 
@@ -578,6 +579,7 @@ int main(int argc, char* argv[])
         //TextRendering_ShowModelViewProjection(window, the_projection, the_view, the_model, p_model);
 
         TextRendering_ShowPoints(window);
+        TextRendering_ShowStartMessage(window);
 
         // O framebuffer onde OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -2339,6 +2341,19 @@ void TextRendering_ShowPoints(GLFWwindow* window){
         int numchars;
         static char buffer[20];
         numchars = snprintf(buffer, 20, "%.2f Points", (timeNow - startTime));
+        float lineheight = TextRendering_LineHeight(window);
+        float charwidth = TextRendering_CharWidth(window);
+
+        TextRendering_PrintString(window, buffer, 1.0f-(numchars + 1)*charwidth, 1.0f-lineheight, 1.0f);
+    }
+}
+
+void TextRendering_ShowStartMessage(GLFWwindow* window){
+    if(!started){
+        float timeNow = (float)glfwGetTime();
+        int numchars;
+        static char buffer[20];
+        numchars = snprintf(buffer, 30, "Pressione ENTER para jogar!");
         float lineheight = TextRendering_LineHeight(window);
         float charwidth = TextRendering_CharWidth(window);
 
