@@ -64,6 +64,32 @@ void main()
     normal = inverse(transpose(model)) * normal_coefficients;
     normal.w = 0.0;
 
+    vec4 cam_pos = inverse(view) * vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 n = normalize(normal);
+
+    // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
+    vec4 l = normalize(vec4(1.0,1.0,-1.0,0.0));
+
+    // Vetor que define o sentido da câmera em relação ao ponto atual.
+    vec4 v = normalize(cam_pos - position_world);
+
+    // Vetor que define o sentido da reflexão especular ideal.
+    vec4 r = -l + 2 * n * dot(n, l);
+
+    vec4 I = vec4(1.0,1.0,1.0, 1.0);
+
+    // Espectro da luz ambiente
+    vec4 Ia = vec4(0.5, 0.5, 0.5, 1.0);
+
+    // Termo difuso utilizando a lei dos cossenos de Lambert
+    vec4 lambert_diffuse_term = color_coefficients * I * max(0, dot(n, v));
+
+    // Termo ambiente
+    vec4 ambient_term = color_coefficients * Ia;
+
+    // Termo especular utilizando o modelo de iluminação de Phong
+    vec4 phong_specular_term = vec4(0.8,0.8,0.8,1.0) * I * pow(max(0, dot(r, v)), 20);
+
     // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
     texcoords = texture_coefficients;
 
@@ -79,6 +105,6 @@ void main()
         // "cor_interpolada_pelo_rasterizador". Esta variável será interpolada pelo
         // rasterizador, gerando valores interpolados para cada fragmento!  Veja o
         // arquivo "shader_fragment.glsl".
-        interpColor = color_coefficients;
+        interpColor = lambert_diffuse_term + ambient_term + phong_specular_term;
     }
 }
