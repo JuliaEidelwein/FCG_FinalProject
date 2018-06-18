@@ -57,18 +57,9 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // 
 void TextRendering_Init();
 float TextRendering_LineHeight(GLFWwindow* window);
 float TextRendering_CharWidth(GLFWwindow* window);
+void TextRendering_ShowPoints(GLFWwindow* window);
 void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrix(GLFWwindow* window, glm::mat4 M, float x, float y, float scale = 1.0f);
-void TextRendering_PrintVector(GLFWwindow* window, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 
-// Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
-// outras informações do programa. Definidas após main().
-void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model);
-void TextRendering_ShowEulerAngles(GLFWwindow* window);
-void TextRendering_ShowProjection(GLFWwindow* window);
-void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
 
 // Funções callback para comunicação com o sistema operacional e interação do
 // usuário. Veja mais comentários nas definições das mesmas, abaixo.
@@ -79,13 +70,20 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+//Teste de colisão do jogador com o plano do chão
 bool PlayerFloorColision(float floorY, float playerLowerY);
+//Teste de colisão do joagor com um obstáculo
 bool PlayerObstacleColision(glm::mat4 &m, float height, float width, float depth, char type);
+//Função que monta o personagem e trata de sua movimentação
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniforms, GLuint program_id);
+//Cria cada um dos obstáculos randomicamente
 void AddRandomObstacles();
+//Função que itera sobre os obstáculos e os move
 void MoveObstacles();
+//Testa se o obstáculo está no campo de visão do jogador
 bool IsBehind(const glm::mat4& m);
 
+//Matriz que guarda o deslocamento e resizing do torso jogador
 glm::mat4 chestModel;
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
@@ -264,6 +262,8 @@ float g_LeftLowerLegAngleZ = 0.0f;
 float g_RightLowerLegAngleX = 0.0f;
 float g_RightLowerLegAngleZ = 0.0f;
 
+float startTime = 0;
+
 void BuildCamera(GLint view_uniform, GLint projection_uniform);
 
 void liftLeftLeg();
@@ -434,7 +434,6 @@ int main(int argc, char* argv[])
     double prevTime = glfwGetTime();
     double currentTime;
     //double timeDelta;
-    int obstacleDelta = 0;
 
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -578,16 +577,7 @@ int main(int argc, char* argv[])
         //glm::vec4 p_model(0.5f, 0.5f, 0.5f, 1.0f);
         //TextRendering_ShowModelViewProjection(window, the_projection, the_view, the_model, p_model);
 
-        // Imprimimos na tela os ângulos de Euler que controlam a rotação do
-        // terceiro cubo.
-        TextRendering_ShowEulerAngles(window);
-
-        // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
-        TextRendering_ShowProjection(window);
-
-        // Imprimimos na tela informação sobre o número de quadros renderizados
-        // por segundo (frames per second).
-        TextRendering_ShowFramesPerSecond(window);
+        TextRendering_ShowPoints(window);
 
         // O framebuffer onde OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -614,6 +604,7 @@ int main(int argc, char* argv[])
 }
 
 void AddRandomObstacles() {
+
     if(started){
         float x = (float)rand()/(float)RAND_MAX;
 
@@ -634,9 +625,9 @@ void AddRandomObstacles() {
                 busses.push_back(Matrix_Scale(0.25f, 0.3f, 0.3f) * Matrix_Rotate(PI, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)) *
                                  Matrix_Translate(l * 3.0f, 0.0f, -40.0f));
             else if(s < 0.4)
-                cows.push_back(Matrix_Scale(0.8f, 0.8f, 0.8f) * Matrix_Translate(l, 0.65f, 20.0f));
+                cows.push_back(Matrix_Scale(0.8f, 0.8f, 0.8f) * Matrix_Translate(l, 0.65f, (rand()%40 + 25)));
             else
-                blockades.push_back(Matrix_Scale(0.4f, 1.2f, 0.8f) * Matrix_Translate(l * 2.0f, 0.0f, 20.0f));
+                blockades.push_back(Matrix_Scale(0.4f, 1.2f, 0.8f) * Matrix_Translate(l * 2.0f, 0.0f, (rand()%40 + 25)));
         }
     }
 }
@@ -660,7 +651,6 @@ void MoveObstacles() {
             (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, 30.0f * timeDelta);
             PlayerObstacleColision(*it, 2.5f, 1.8f, 7.5f, 'p');
         }
-
         cows.remove_if(IsBehind);
         blockades.remove_if(IsBehind);
         busses.remove_if(IsBehind);
@@ -736,7 +726,6 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
                 moveRightArmForwards(-1);
                 moveLeftArmBackwards(-1);
                 if(g_LeftLegAngleX >= 0){
-                    //printf("%f\n", g_RightLegAngleX);
                     clearAngles();
                     prevLegUp = 'l';
                     legUp = 'n';
@@ -966,20 +955,14 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
 }
 
 void BuildCamera(GLint view_uniform, GLint projection_uniform) {
-    //glm::mat4 view;
-    glm::vec4 look_at = glm::vec4(0.0f, 1.5f, 0.0f, 1.0f);
 
     if(free_cam_enabled) {
         view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
     } else {
         glm::vec4 new_cam_pos = camera_position_c + (-camera_view_vector * g_CameraDistance) / norm(camera_view_vector);
-        //new_cam_pos.z = new_cam_pos.z - 8.0f;
-        //new_cam_pos.y = new_cam_pos.y + 1.5f;
         view = Matrix_Camera_View(new_cam_pos,
                                   camera_view_vector, camera_up_vector);
     }
-
-    //glm::mat4 projection;
 
     float nearplane = -0.1f;  // Posição do "near plane"
     float farplane  = -60.0f; // Posição do "far plane"
@@ -1397,7 +1380,7 @@ void jump(){
         float desiredLeftLowerLegAngleZ = 0.000000;
         float desiredRightLowerLegAngleZ = 0.403120;
 
-        float totalIterationTime = 0.4;//timeDelta;
+        float totalIterationTime = 0.4;
 
         LeftArmAngleXDelta = (desiredLeftArmAngleX - g_LeftArmAngleX);
         RightArmAngleXDelta = (desiredRightArmAngleX - g_RightArmAngleX);
@@ -1434,24 +1417,6 @@ void jump(){
         RightLegAngleZDelta = RightLegAngleZDelta/totalIterationTime;
         LeftLowerLegAngleZDelta = LeftLowerLegAngleZDelta/totalIterationTime;
         RightLowerLegAngleZDelta = RightLowerLegAngleZDelta/totalIterationTime;
-
-        /*printf("%f\n",LeftArmAngleXDelta);
-        printf("%f\n",RightArmAngleXDelta);
-        printf("%f\n",LeftForearmAngleXDelta);
-        printf("%f\n",RightForearmAngleXDelta);
-        printf("%f\n",LeftLegAngleXDelta);
-        printf("%f\n",RightLegAngleXDelta);
-        printf("%f\n",LeftLowerLegAngleXDelta);
-        printf("%f\n",RightLowerLegAngleXDelta);
-
-        printf("%f\n",LeftArmAngleZDelta);
-        printf("%f\n",RightArmAngleZDelta);
-        printf("%f\n",LeftForearmAngleZDelta);
-        printf("%f\n",RightForearmAngleZDelta);
-        printf("%f\n",LeftLegAngleZDelta);
-        printf("%f\n",RightLegAngleZDelta);
-        printf("%f\n",LeftLowerLegAngleZDelta);
-        printf("%f\n",RightLowerLegAngleZDelta);*/
     }
 
     g_TorsoPositionY = g_TorsoPositionY + 3*timeDelta;
@@ -2133,18 +2098,13 @@ bool PlayerObstacleColision(glm::mat4 &m, float height, float width, float depth
         deltaX = 0;
         deltaZ = 0;
     }
-    printf("PEITO x: %f | y: %f | z: %f\n", chestModel[0][3], chestModel[1][3], chestModel[2][3]);
-    printf("VACA x: %f | y: %f | z: %f\n", m[3][0], m[3][1], m[3][2]);
-
     if(fabs((chestModel[0][3] + chestModel[0][0]/2) - ((m[3][0] + deltaX) + width/2)) < (chestModel[0][0]/2 + width/2)){
-        printf("chest: %f | bus: %f\n", (chestModel[0][3] + chestModel[0][0]/2), ((m[3][0] + deltaX) + width/2));
-        printf("distC: %f | distB: %f\n", chestModel[0][0]/2, width/2);
-    printf("%f\n", chestModel[0][0]/2);
         if(fabs((chestModel[1][3] + chestModel[1][1]/2) - ((m[3][1] + deltaY) + height/2)) < (chestModel[1][1]/2 + height/2)){
             if(fabs((chestModel[2][3] + chestModel[2][2]/2) - ((m[3][2] + deltaZ) + depth/2)) < (chestModel[2][2]/2 + depth/2)){
-                printf("x: %f | y: %f | z: %f\n", chestModel[0][3], chestModel[1][3], chestModel[2][3]);
-                printf("x: %f | y: %f | z: %f\n", m[3][0], m[3][1], m[3][2]);
-                started = false;
+                cows.clear();
+                busses.clear();
+                blockades.clear();
+                started = false; //Morreu
                 return true;
             }
         }
@@ -2294,8 +2254,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     //   Se apertar tecla Z       então g_AngleZ += delta;
     //   Se apertar tecla shift+Z então g_AngleZ -= delta;
 
-    float delta = 3.141592 / 16; // 22.5 graus, em radianos.
-
     if (key == GLFW_KEY_C && action == GLFW_PRESS)
     {
         free_cam_enabled = !free_cam_enabled;
@@ -2345,6 +2303,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             legUp = 'n';
         }
         started = true;
+        startTime = (float)glfwGetTime();
     }
 
     // Se o usuário apertar a tecla P, utilizamos projeção perspectiva.
@@ -2372,100 +2331,19 @@ void ErrorCallback(int error, const char* description)
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
 }
 
-// Esta função recebe um vértice com coordenadas de modelo p_model e passa o
-// mesmo por todos os sistemas de coordenadas armazenados nas matrizes model,
-// view, e projection; e escreve na tela as matrizes e pontos resultantes
-// dessas transformações.
-void TextRendering_ShowModelViewProjection(
-    GLFWwindow* window,
-    glm::mat4 projection,
-    glm::mat4 view,
-    glm::mat4 model,
-    glm::vec4 p_model
-)
-{
-    if ( !g_ShowInfoText )
-        return;
 
-    glm::vec4 p_world = model*p_model;
-    glm::vec4 p_camera = view*p_world;
 
-    float pad = TextRendering_LineHeight(window);
+void TextRendering_ShowPoints(GLFWwindow* window){
+    if(started){
+        float timeNow = (float)glfwGetTime();
+        int numchars;
+        static char buffer[20];
+        numchars = snprintf(buffer, 20, "%.2f Points", (timeNow - startTime));
+        float lineheight = TextRendering_LineHeight(window);
+        float charwidth = TextRendering_CharWidth(window);
 
-    TextRendering_PrintString(window, " Model matrix             Model     World", -1.0f, 1.0f-pad, 1.0f);
-    TextRendering_PrintMatrixVectorProduct(window, model, p_model, -1.0f, 1.0f-2*pad, 1.0f);
-
-    TextRendering_PrintString(window, " View matrix              World     Camera", -1.0f, 1.0f-7*pad, 1.0f);
-    TextRendering_PrintMatrixVectorProduct(window, view, p_world, -1.0f, 1.0f-8*pad, 1.0f);
-
-    TextRendering_PrintString(window, " Projection matrix        Camera                   NDC", -1.0f, 1.0f-13*pad, 1.0f);
-    TextRendering_PrintMatrixVectorProductDivW(window, projection, p_camera, -1.0f, 1.0f-14*pad, 1.0f);
-}
-
-// Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
-// g_AngleX, g_AngleY, e g_AngleZ.
-void TextRendering_ShowEulerAngles(GLFWwindow* window)
-{
-    if ( !g_ShowInfoText )
-        return;
-
-    float pad = TextRendering_LineHeight(window);
-
-    char buffer[80];
-    snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
-
-    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
-}
-
-// Escrevemos na tela qual matriz de projeção está sendo utilizada.
-void TextRendering_ShowProjection(GLFWwindow* window)
-{
-    if ( !g_ShowInfoText )
-        return;
-
-    float lineheight = TextRendering_LineHeight(window);
-    float charwidth = TextRendering_CharWidth(window);
-
-    if ( g_UsePerspectiveProjection )
-        TextRendering_PrintString(window, "Perspective", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
-    else
-        TextRendering_PrintString(window, "Orthographic", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
-}
-
-// Escrevemos na tela o número de quadros renderizados por segundo (frames per
-// second).
-void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
-{
-    if ( !g_ShowInfoText )
-        return;
-
-    // Variáveis estáticas (static) mantém seus valores entre chamadas
-    // subsequentes da função!
-    static float old_seconds = (float)glfwGetTime();
-    static int   ellapsed_frames = 0;
-    static char  buffer[20] = "?? fps";
-    static int   numchars = 7;
-
-    ellapsed_frames += 1;
-
-    // Recuperamos o número de segundos que passou desde a execução do programa
-    float seconds = (float)glfwGetTime();
-
-    // Número de segundos desde o último cálculo do fps
-    float ellapsed_seconds = seconds - old_seconds;
-
-    if ( ellapsed_seconds > 1.0f )
-    {
-        numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
-
-        old_seconds = seconds;
-        ellapsed_frames = 0;
+        TextRendering_PrintString(window, buffer, 1.0f-(numchars + 1)*charwidth, 1.0f-lineheight, 1.0f);
     }
-
-    float lineheight = TextRendering_LineHeight(window);
-    float charwidth = TextRendering_CharWidth(window);
-
-    TextRendering_PrintString(window, buffer, 1.0f-(numchars + 1)*charwidth, 1.0f-lineheight, 1.0f);
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
