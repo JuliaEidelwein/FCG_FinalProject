@@ -80,7 +80,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 bool PlayerFloorColision(float floorY, float playerLowerY);
-bool PlayerObstacleColision(glm::mat4 &m, glm::vec3 minBbox, glm::vec3 maxBbox);
+bool PlayerObstacleColision(glm::mat4 &m, float height, float width, float depth, char type);
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniforms, GLuint program_id);
 void AddRandomObstacles();
 void MoveObstacles();
@@ -614,52 +614,57 @@ int main(int argc, char* argv[])
 }
 
 void AddRandomObstacles() {
-    float x = (float)rand()/(float)RAND_MAX;
+    if(started){
+        float x = (float)rand()/(float)RAND_MAX;
 
-    if(x <= 0.005) {
+        if(x <= 0.005) {
 
-        float l = (float)rand()/(float)(RAND_MAX/3);
-        if(l <= 1) {
-            l = -2.5;
-        } else if(l <= 2) {
-            l = 0;
-        } else {
-            l = 2.5;
+            float l = (float)rand()/(float)(RAND_MAX/3);
+            if(l <= 1) {
+                l = -2.5;
+            } else if(l <= 2) {
+                l = 0;
+            } else {
+                l = 2.5;
+            }
+
+            float s = rand()/(float)RAND_MAX;
+
+            if(s < 0.06)
+                busses.push_back(Matrix_Scale(0.25f, 0.3f, 0.3f) * Matrix_Rotate(PI, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)) *
+                                 Matrix_Translate(l * 3.0f, 0.0f, -40.0f));
+            else if(s < 0.4)
+                cows.push_back(Matrix_Scale(0.8f, 0.8f, 0.8f) * Matrix_Translate(l, 0.65f, 20.0f));
+            else
+                blockades.push_back(Matrix_Scale(0.4f, 1.2f, 0.8f) * Matrix_Translate(l * 2.0f, 0.0f, 20.0f));
         }
-
-        float s = rand()/(float)RAND_MAX;
-
-        if(s < 0.06)
-            busses.push_back(Matrix_Scale(0.25f, 0.3f, 0.3f) * Matrix_Rotate(PI, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)) *
-                             Matrix_Translate(l * 3.0f, 0.0f, -40.0f));
-        else if(s < 0.4)
-            cows.push_back(Matrix_Scale(0.8f, 0.8f, 0.8f) * Matrix_Translate(l, 0.65f, 20.0f));
-        else
-            blockades.push_back(Matrix_Scale(0.4f, 1.2f, 0.8f) * Matrix_Translate(l * 2.0f, 0.0f, 20.0f));
     }
 }
 
 bool IsBehind(const glm::mat4& m) {
-    printf("IS BEHIND x: %f | y: %f | z: %f\n",m[3][0], m[3][1], m[3][2]);
     return m[3][2] < -20;
 }
 
 void MoveObstacles() {
-    std::list<glm::mat4>::iterator it;
-    for (it = cows.begin(); it != cows.end(); ++it) {
-        (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
-    }
-    for (it = blockades.begin(); it != blockades.end(); ++it) {
-        (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
-        PlayerObstacleColision(*it, g_VirtualScene2["blockade"].bbox_min, g_VirtualScene2["blockade"].bbox_max);
-    }
-    for (it = busses.begin(); it != busses.end(); ++it) {
-        (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, 30.0f * timeDelta);
-    }
+    if(started){
+        std::list<glm::mat4>::iterator it;
+        for (it = cows.begin(); it != cows.end(); ++it) {
+            (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
+            PlayerObstacleColision(*it, 1.9f, 1.8f, 0.6f, 'c');
+        }
+        for (it = blockades.begin(); it != blockades.end(); ++it) {
+            (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, -10.0f * timeDelta);
+            PlayerObstacleColision(*it, 1.2f, 1.6f, 0.5f, 'b');
+        }
+        for (it = busses.begin(); it != busses.end(); ++it) {
+            (*it) = (*it) * Matrix_Translate(0.0f, 0.0f, 30.0f * timeDelta);
+            PlayerObstacleColision(*it, 2.5f, 1.8f, 7.5f, 'p');
+        }
 
-    cows.remove_if(IsBehind);
-    blockades.remove_if(IsBehind);
-    busses.remove_if(IsBehind);
+        cows.remove_if(IsBehind);
+        blockades.remove_if(IsBehind);
+        busses.remove_if(IsBehind);
+    }
 }
 
 void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_black_uniform, GLuint program_id) {
@@ -674,119 +679,123 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
     model = model * Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY + 1.83, -6.5f);
     //chestModel = chestModel*Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY + 1.83, -6.5f);
     //if(jumpStep > 0){
-    switch(movement){
-    case -1: //Falling
-        if(!PlayerFloorColision(0.0, g_TorsoPositionY)){
-            fall();
-        } else {
-            timeWhenSpacePressed = 0;
-            clearAngles();
-            if(started){
-                movement = 2;
-                //clearAngles();
-                chestModel[1][3] = 1.83;
-                legUp = 'n';
-            }
-        }
-        break;
-    case 1://Jumping
-        if(currentTime - timeWhenSpacePressed < 0.4){
-            jump();
-        } else {
-            movement = 0;
-        }
-        break;
-    case 2://Running
-        switch(legUp){
-        case 'n': //none
-            if(prevLegUp == 'l' or prevLegUp == 'n'){
-                liftRightLeg();
-                moveLeftArmForwards(1);
-                moveRightArmBackwards(1);
-                if(g_RightLegAngleX <= -2){
-                    legUp = 'r';
-                }
+    if(started){
+        switch(movement){
+        case -1: //Falling
+            if(!PlayerFloorColision(0.0, g_TorsoPositionY)){
+                fall();
             } else {
-                liftLeftLeg();
-                moveRightArmForwards(1);
-                moveLeftArmBackwards(1);
-                if(g_LeftLegAngleX <= -2){
-                    legUp = 'l';
+                timeWhenSpacePressed = 0;
+                clearAngles();
+                if(started){
+                    movement = 2;
+                    //clearAngles();
+                    chestModel[1][3] = 1.83;
+                    legUp = 'n';
                 }
             }
             break;
-        case 'r': //right
-            lowRightLeg();
-            moveLeftArmForwards(-1);
-            moveRightArmBackwards(-1);
-            if(g_RightLegAngleX >= 0){
-                clearAngles();
-                prevLegUp = 'r';
-                legUp = 'n';
+        case 1://Jumping
+            if(currentTime - timeWhenSpacePressed < 0.4){
+                jump();
+            } else {
+                movement = 0;
             }
             break;
-        case 'l': // left
-            lowLeftLeg();
-            moveRightArmForwards(-1);
-            moveLeftArmBackwards(-1);
-            if(g_LeftLegAngleX >= 0){
-                //printf("%f\n", g_RightLegAngleX);
-                clearAngles();
-                prevLegUp = 'l';
-                legUp = 'n';
+        case 2://Running
+            switch(legUp){
+            case 'n': //none
+                if(prevLegUp == 'l' or prevLegUp == 'n'){
+                    liftRightLeg();
+                    moveLeftArmForwards(1);
+                    moveRightArmBackwards(1);
+                    if(g_RightLegAngleX <= -2){
+                        legUp = 'r';
+                    }
+                } else {
+                    liftLeftLeg();
+                    moveRightArmForwards(1);
+                    moveLeftArmBackwards(1);
+                    if(g_LeftLegAngleX <= -2){
+                        legUp = 'l';
+                    }
+                }
+                break;
+            case 'r': //right
+                lowRightLeg();
+                moveLeftArmForwards(-1);
+                moveRightArmBackwards(-1);
+                if(g_RightLegAngleX >= 0){
+                    clearAngles();
+                    prevLegUp = 'r';
+                    legUp = 'n';
+                }
+                break;
+            case 'l': // left
+                lowLeftLeg();
+                moveRightArmForwards(-1);
+                moveLeftArmBackwards(-1);
+                if(g_LeftLegAngleX >= 0){
+                    //printf("%f\n", g_RightLegAngleX);
+                    clearAngles();
+                    prevLegUp = 'l';
+                    legUp = 'n';
+                }
+                break;
             }
             break;
+            /*case 3: //Move Right
+                if(currentTime - timeWhenRightPressed < 0.47){
+                    g_TorsoPositionX = g_TorsoPositionX - 2.5*timeDelta;
+                } else {
+                    movement = 2;
+                }
+                break;
+            case 4: //Move Left
+                if(currentTime - timeWhenLeftPressed < 0.47){
+                    g_TorsoPositionX = g_TorsoPositionX + 2.5*timeDelta;
+                } else {
+                    movement = 2;
+                }
+                break;*/
+        case 0://Nothing
+        default:
+            if(currentTime - timeWhenSpacePressed > 0.47){
+                movement = -1;
+            }
         }
-        break;
-        /*case 3: //Move Right
-	        if(currentTime - timeWhenRightPressed < 0.47){
-	            g_TorsoPositionX = g_TorsoPositionX - 2.5*timeDelta;
-	        } else {
-	            movement = 2;
-	        }
-	        break;
-	    case 4: //Move Left
-	        if(currentTime - timeWhenLeftPressed < 0.47){
-	            g_TorsoPositionX = g_TorsoPositionX + 2.5*timeDelta;
-	        } else {
-	            movement = 2;
-	        }
-	        break;*/
-    case 0://Nothing
-    default:
-        if(currentTime - timeWhenSpacePressed > 0.47){
-            movement = -1;
+        if(chestModel[1][3] < 1.83){
+            chestModel[1][3] = 1.83;
         }
-    }
-    if(currentTime - timeWhenRightPressed < 0.4 && timeWhenRightPressed != 0){
-        g_TorsoPositionX = g_TorsoPositionX - 4.3*timeDelta;
-        camera_position_c.x = camera_position_c.x - 4.3*timeDelta;
+        if(currentTime - timeWhenRightPressed < 0.4 && timeWhenRightPressed != 0){
+            g_TorsoPositionX = g_TorsoPositionX - 4.3*timeDelta;
+            camera_position_c.x = camera_position_c.x - 4.3*timeDelta;
 
-    } else {
-        if(currentTime - timeWhenLeftPressed < 0.4 && timeWhenLeftPressed != 0){
-            g_TorsoPositionX = g_TorsoPositionX + 4.3*timeDelta;
-            camera_position_c.x = camera_position_c.x + 4.3*timeDelta;
         } else {
-            switch(track){
-            case 0:
-                camera_position_c.x = 1.95f;
-                g_TorsoPositionX = 2.0f;
-                chestModel[0][3] = 2.0f;
-                break;
-            case 1:
-                camera_position_c.x = -0.05f;
-                g_TorsoPositionX = 0.0f;
-                chestModel[0][3] = 0.0f;
-                break;
-            case 2:
-            default:
-                camera_position_c.x = -2.05f;
-                g_TorsoPositionX = -2.0f;
-                chestModel[0][3] = -2.0f;
+            if(currentTime - timeWhenLeftPressed < 0.4 && timeWhenLeftPressed != 0){
+                g_TorsoPositionX = g_TorsoPositionX + 4.3*timeDelta;
+                camera_position_c.x = camera_position_c.x + 4.3*timeDelta;
+            } else {
+                switch(track){
+                case 0:
+                    camera_position_c.x = 1.95f;
+                    g_TorsoPositionX = 2.0f;
+                    chestModel[0][3] = 2.0f;
+                    break;
+                case 1:
+                    camera_position_c.x = -0.05f;
+                    g_TorsoPositionX = 0.0f;
+                    chestModel[0][3] = 0.0f;
+                    break;
+                case 2:
+                default:
+                    camera_position_c.x = -2.05f;
+                    g_TorsoPositionX = -2.0f;
+                    chestModel[0][3] = -2.0f;
+                }
             }
         }
     }
-
 
     //}
     // Guardamos matriz model atual na pilha
@@ -950,7 +959,8 @@ void BuildCharacter(double currentTime, GLint model_uniform, GLint render_as_bla
     PopMatrix(model);
 
     //model = Matrix_Identity();
-    //model = model * Matrix_Translate(0.0f, 1.83f, -6.0f);
+    //model = model * Matrix_Scale(0.5f, 0.5f, 0.5f);
+    //model = model * Matrix_Translate(2.0f, 1.83f, -6.0f);
     //glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
     //DrawCube(render_as_black_uniform);
 }
@@ -2099,26 +2109,42 @@ bool PlayerFloorColision(float floorY, float playerLowerY){
     return false;
 }
 
-bool PlayerObstacleColision(glm::mat4 &m, glm::vec3 minBbox, glm::vec3 maxBbox){
-    //printf("x: %f | y: %f | z: %f\n",chestModel[0][3], chestModel[1][3], chestModel[2][3]);
-    //printf("w: %f | h: %f | d: %f\n",chestModel[0][0], chestModel[1][1], chestModel[2][2]);
-    printf("\nx: %f | y: %f | z: %f\n",chestModel[0][3], chestModel[1][3], chestModel[2][3]);
-    printf("w: %f | h: %f | d: %f\n",chestModel[0][0], chestModel[1][1], chestModel[2][2]);
-    printf("Obstacle:\n");
-    printf("x: %f | y: %f | z: %f\n",m[3][0], m[3][1], m[3][2]);
-    printf("x: %f | y: %f | z: %f\n",minBbox.x, minBbox.y, minBbox.z);
-    printf("x: %f | y: %f | z: %f\n",maxBbox.x, maxBbox.y, maxBbox.z);
-    printf("w: %f | h: %f | d: %f\n",abs(abs(minBbox.x) - abs(maxBbox.x)), abs(abs(minBbox.y) - abs(maxBbox.y)),abs(abs(minBbox.z) - abs(maxBbox.z)));
-    if(abs(chestModel[0][3] - minBbox.x) < (chestModel[0][0] + abs(abs(minBbox.x) - abs(maxBbox.x)))){
-        if(abs(chestModel[1][3] - minBbox.y) < (chestModel[1][1] + abs(abs(minBbox.y) - abs(maxBbox.y)))){
-            if(abs(chestModel[2][3] - minBbox.z) < (chestModel[2][2] + abs(abs(minBbox.z) - abs(maxBbox.z)))){
-                printf("x: %f | y: %f | z: %f\n",chestModel[0][3], chestModel[1][3], chestModel[2][3]);
-                printf("w: %f | h: %f | d: %f\n",chestModel[0][0], chestModel[1][1], chestModel[2][2]);
-                printf("Obstacle:\n");
-                printf("x: %f | y: %f | z: %f\n",minBbox.x, minBbox.y, minBbox.z);
-                printf("x: %f | y: %f | z: %f\n",maxBbox.x, maxBbox.y, maxBbox.z);
-                printf("w: %f | h: %f | d: %f\n",abs(abs(minBbox.x) - abs(maxBbox.x)), abs(abs(minBbox.y) - abs(maxBbox.y)),abs(abs(minBbox.z) - abs(maxBbox.z)));
-                printf("morreu!\n\n");
+bool PlayerObstacleColision(glm::mat4 &m, float height, float width, float depth, char type){
+    float deltaY, deltaX, deltaZ;
+    //Switch utlilizado para tratar objetos com diferentes pontos iniciais, nem todos estão no canto superior esquerdo
+    switch(type){
+    case 'p':
+        deltaY = 1.8;
+        deltaX = -1.0;
+        deltaZ = -3.3;
+        break;
+    case 'b':
+        deltaY = 1;
+        deltaX = 0;
+        deltaZ = -0.35;
+        break;
+    case 'c':
+        deltaY = 0;
+        deltaX = 0;
+        deltaZ = -0.4;
+        break;
+    default:
+        deltaY = 0;
+        deltaX = 0;
+        deltaZ = 0;
+    }
+    printf("PEITO x: %f | y: %f | z: %f\n", chestModel[0][3], chestModel[1][3], chestModel[2][3]);
+    printf("VACA x: %f | y: %f | z: %f\n", m[3][0], m[3][1], m[3][2]);
+
+    if(fabs((chestModel[0][3] + chestModel[0][0]/2) - ((m[3][0] + deltaX) + width/2)) < (chestModel[0][0]/2 + width/2)){
+        printf("chest: %f | bus: %f\n", (chestModel[0][3] + chestModel[0][0]/2), ((m[3][0] + deltaX) + width/2));
+        printf("distC: %f | distB: %f\n", chestModel[0][0]/2, width/2);
+    printf("%f\n", chestModel[0][0]/2);
+        if(fabs((chestModel[1][3] + chestModel[1][1]/2) - ((m[3][1] + deltaY) + height/2)) < (chestModel[1][1]/2 + height/2)){
+            if(fabs((chestModel[2][3] + chestModel[2][2]/2) - ((m[3][2] + deltaZ) + depth/2)) < (chestModel[2][2]/2 + depth/2)){
+                printf("x: %f | y: %f | z: %f\n", chestModel[0][3], chestModel[1][3], chestModel[2][3]);
+                printf("x: %f | y: %f | z: %f\n", m[3][0], m[3][1], m[3][2]);
+                started = false;
                 return true;
             }
         }
